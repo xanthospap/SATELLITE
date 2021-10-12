@@ -5,6 +5,7 @@
 # for all the maps are saved in the ascii file (statisticnumbers_1.txt)
 # (C) Stavros Akras
 
+from __future__ import print_function
 
 import numpy as np
 import pyneb as pn

@@ -2,17 +2,15 @@
 # Computes the total elemental abundances and ICFs for all the pseudo-slits in the rotation analysis module.
 # (C) Stavros Akras
 
+from __future__ import print_function
 
 import numpy as np
 import pyneb as pn
 from numpy import inf
 
-
 from satellite import norm_flux_error_script as nfes
 
-
 def total_abundances_ICFs(ion_abun,ion_abun_error,atom_abun_fake,i,line_names,lines_available,elem_abun_KB,elem_ICF_KB,elem_abun_DIMS,elem_ICF_DIMS,elem_abun_KB_error,elem_ICF_KB_error,elem_abun_DIMS_error,elem_ICF_DIMS_error,elem_abun_KB_ratio,elem_abun_KB_ratio_error,elem_abun_DIMS_ratio,elem_abun_DIMS_ratio_error,param_mod_name):
-
     
     index_atomicData=12
     name_atomicdata=str(param_mod_name[index_atomicData])

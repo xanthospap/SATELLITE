@@ -2,8 +2,9 @@
 # Computes the total elemental abundances and ICFs for all the pixels in 2D maps
 # (C) Stavros Akras
 
+from __future__ import print_function
+
 import numpy as np
-#import pyfits as pf
 import pyneb as pn
 from numpy import inf
 
@@ -45,15 +46,15 @@ def total_abundances_ICFs(ion_abun,ion_abun_error,atom_abun_fake,i,j,line_names,
 
     He2_ab=0
     He2_ab_er=0
-    if (index1==1 and index2==1):
+    if index1==1 and index2==1:
          He2_ab=(He2_ab_1+He2_ab_2)/2.
          He2_ab_er=np.sqrt(He2_ab_1_er**2+He2_ab_2_er**2)/2.
-    elif (index1==1 and index2==0):
-         He2_ab=(He2_ab_1)
-         He2_ab_er=(He2_ab_1_er)
-    elif (index1==0 and index2==1):
-         He2_ab=(He3_ab_2)
-         He2_ab_er=(He2_ab_2_er)
+    elif index1==1 and index2==0:
+         He2_ab=He2_ab_1
+         He2_ab_er=He2_ab_1_er
+    elif index1==0 and index2==1:
+         He2_ab=He3_ab_2
+         He2_ab_er=He2_ab_2_er
     
     index1=index2=0
     index_line1=line_names.index("HeII_4686s")
@@ -71,13 +72,13 @@ def total_abundances_ICFs(ion_abun,ion_abun_error,atom_abun_fake,i,j,line_names,
 
     He3_ab=0
     He3_ab_er=0
-    if (index1==1 and index2==1):
+    if index1==1 and index2==1:
          He3_ab=(He3_ab_1+He3_ab_2)/2.
          He3_ab_er=np.sqrt(He3_ab_1_er**2+He3_ab_2_er**2)/2.
-    elif (index1==1 and index2==0):
-         He3_ab=(He3_ab_1)
-         He3_ab_er=(He3_ab_1_er)
-    elif (index1==0 and index2==1):
+    elif index1==1 and index2==0:
+         He3_ab=He3_ab_1
+         He3_ab_er=He3_ab_1_er
+    elif index1==0 and index2==1:
          He3_ab=He3_ab_2
          He3_ab_er=He3_ab_2_er
         
@@ -111,25 +112,25 @@ def total_abundances_ICFs(ion_abun,ion_abun_error,atom_abun_fake,i,j,line_names,
     
     O2_ab=0
     O2_ab_er=0
-    if (index1==1 and index2==0 and index3==0 and index4==0):
+    if index1==1 and index2==0 and index3==0 and index4==0:
         O2_ab=O2_ab_1
         O2_ab_er=O2_ab_1_er
-    elif (index1==0 and index2==1 and index3==0 and index4==0):
+    elif index1==0 and index2==1 and index3==0 and index4==0:
         O2_ab=O2_ab_2
         O2_ab_er=O2_ab_2_er
-    elif (index1==1 and index2==1 and index3==0 and index4==0):
+    elif index1==1 and index2==1 and index3==0 and index4==0:
         O2_ab=(O2_ab_1+O2_ab_2)/2.
         O2_ab_er=np.sqrt(O2_ab_1_er**2+O2_ab_2_er**2)/2.
-    elif (index1==0 and index2==0 and index3==1 and index4==0):
+    elif index1==0 and index2==0 and index3==1 and index4==0:
         O2_ab=O2_ab_3
         O2_ab_er=O2_ab_3_er
-    elif (index1==0 and index2==0 and index3==0 and index4==1):
+    elif index1==0 and index2==0 and index3==0 and index4==1:
         O2_ab=O2_ab_4
         O2_ab_er=O2_ab_4_er
-    elif (index1==0 and index2==0 and index3==1 and index4==1):
+    elif index1==0 and index2==0 and index3==1 and index4==1:
         O2_ab=(O2_ab_3+O2_ab_4)/2.
         O2_ab_er=np.sqrt(O2_ab_3_er**2+O2_ab_4_er**2)/2.
-    elif (index1==1 and index2==1 and index3==1 and index4==1):    
+    elif index1==1 and index2==1 and index3==1 and index4==1:    
         O2_ab=(O2_ab_1+ O2_ab_2+ O2_ab_3+ O2_ab_4)/4.
         O2_ab_er=np.sqrt(O2_ab_1_er**2+O2_ab_2_er**2+O2_ab_3_er**2+O2_ab_4_er**2)/4.
     
@@ -153,16 +154,16 @@ def total_abundances_ICFs(ion_abun,ion_abun_error,atom_abun_fake,i,j,line_names,
 
     O3_ab=0 
     O3_ab_er=0
-    if (index1==1 and index2==0 and index3==0):
+    if index1==1 and index2==0 and index3==0:
         O3_ab=O3_ab_1
         O3_ab_er=O3_ab_1_er
-    elif (index1==0 and index2==1 and index3==0 ):
+    elif index1==0 and index2==1 and index3==0:
         O3_ab=O3_ab_2
         O3_ab_er=O3_ab_2_er
-    elif (index1==1 and index2==1 and index3==1 ):
+    elif index1==1 and index2==1 and index3==1:
         O3_ab=(O3_ab_1+O3_ab_2+O3_ab_3)/3.
         O3_ab_er=np.sqrt(O3_ab_1_er**2+O3_ab_2_er**2+O3_ab_3_er**2)/3.
-    elif (index1==0 and index2==1 and index3==1 ):
+    elif index1==0 and index2==1 and index3==1:
         O3_ab=(O3_ab_2+O3_ab_3)/2.
         O3_ab_er=np.sqrt(O3_ab_2_er**2+O3_ab_3_er**2)/2.
   

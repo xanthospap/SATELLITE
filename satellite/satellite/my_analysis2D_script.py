@@ -2,6 +2,8 @@
 # The user can develop his/her own script for 2D analysis module ( future release)
 # (C) Stavros Akras
 
+from __future__ import print_function
+
 import numpy as np
 
         

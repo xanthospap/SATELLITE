@@ -4,7 +4,23 @@
 
 
 import numpy as np
+        
+class TeNe:
 
+    def __init__(self, numbersize):
+        self.NIISII=np.zeros(numbersize)
+        self.OISII=np.zeros(numbersize)
+        self.OIISII=np.zeros(numbersize)
+        self.OIIISII=np.zeros(numbersize)
+        self.SIIISII=np.zeros(numbersize)
+        self.OIIOII=np.zeros(numbersize)
+        self.NIIOII=np.zeros(numbersize)
+        self.OIOII=np.zeros(numbersize)
+        self.OIIIClIII=np.zeros(numbersize)
+        self.SIIIClIII=np.zeros(numbersize)
+        self.OIIIArVI=np.zeros(numbersize)
+        self.SIIIArVI=np.zeros(numbersize)
+        self.NIIClIII=np.zeros(numbersize)
 
 def nullTeNe(param_mod_name,param_model_values):
     
@@ -17,130 +33,13 @@ def nullTeNe(param_mod_name,param_model_values):
     
     numbersize=int((end_angle-start_angle)/step_angle)+1
     if numbersize>0:
-        class Te:
-            NIISII=np.zeros(numbersize)
-            OISII=np.zeros(numbersize)
-            OIISII=np.zeros(numbersize)
-            OIIISII=np.zeros(numbersize)
-            SIIISII=np.zeros(numbersize)
-            OIIOII=np.zeros(numbersize)
-            NIIOII=np.zeros(numbersize)
-            OIOII=np.zeros(numbersize)
-            OIIIClIII=np.zeros(numbersize)
-            SIIIClIII=np.zeros(numbersize)
-            OIIIArVI=np.zeros(numbersize)
-            SIIIArVI=np.zeros(numbersize)
-            NIIClIII=np.zeros(numbersize)
+        Te = TeNe(numbersize)
+        Ne = TeNe(numbersize)
+        return Te, Ne
 
-        class Ne:
-            NIISII=np.zeros(numbersize)
-            OISII=np.zeros(numbersize)
-            OIISII=np.zeros(numbersize)
-            OIIISII=np.zeros(numbersize)
-            SIIISII=np.zeros(numbersize)
-            OIIOII=np.zeros(numbersize)
-            NIIOII=np.zeros(numbersize)
-            OIOII=np.zeros(numbersize)
-            OIIIClIII=np.zeros(numbersize)
-            SIIIClIII=np.zeros(numbersize)
-            OIIIArVI=np.zeros(numbersize)
-            SIIIArVI=np.zeros(numbersize)
-            NIIClIII=np.zeros(numbersize)
-        
-        class Te_error:
-            NIISII=np.zeros(numbersize)
-            OISII=np.zeros(numbersize)
-            OIISII=np.zeros(numbersize)
-            OIIISII=np.zeros(numbersize)
-            SIIISII=np.zeros(numbersize)
-            OIIOII=np.zeros(numbersize)
-            NIIOII=np.zeros(numbersize)
-            OIOII=np.zeros(numbersize)
-            OIIIClIII=np.zeros(numbersize)
-            SIIIClIII=np.zeros(numbersize)
-            OIIIArVI=np.zeros(numbersize)
-            SIIIArVI=np.zeros(numbersize)
-            NIIClIII=np.zeros(numbersize)
-        
-        class Ne_error:
-            NIISII=np.zeros(numbersize)
-            OISII=np.zeros(numbersize)
-            OIISII=np.zeros(numbersize)
-            OIIISII=np.zeros(numbersize)
-            SIIISII=np.zeros(numbersize)
-            OIIOII=np.zeros(numbersize)
-            NIIOII=np.zeros(numbersize)
-            OIOII=np.zeros(numbersize)
-            OIIIClIII=np.zeros(numbersize)
-            SIIIClIII=np.zeros(numbersize)
-            OIIIArVI=np.zeros(numbersize)
-            SIIIArVI=np.zeros(numbersize)
-            NIIClIII=np.zeros(numbersize)
-    
-    return Te, Ne
-
-
-def nullTeNe_specific_slits(param_mod_name,param_model_values):
+def nullTeNe_specific_slits():
     
     number_specific_slits=10
-    class Te:
-        NIISII=np.zeros(number_specific_slits)
-        OISII=np.zeros(number_specific_slits)
-        OIISII=np.zeros(number_specific_slits)
-        OIIISII=np.zeros(number_specific_slits)
-        SIIISII=np.zeros(number_specific_slits)
-        OIIOII=np.zeros(number_specific_slits)
-        NIIOII=np.zeros(number_specific_slits)
-        OIOII=np.zeros(number_specific_slits)
-        OIIIClIII=np.zeros(number_specific_slits)
-        SIIIClIII=np.zeros(number_specific_slits)
-        OIIIArVI=np.zeros(number_specific_slits)
-        SIIIArVI=np.zeros(number_specific_slits)
-        NIIClIII=np.zeros(number_specific_slits)
-
-    class Ne:
-        NIISII=np.zeros(number_specific_slits)
-        OISII=np.zeros(number_specific_slits)
-        OIISII=np.zeros(number_specific_slits)
-        OIIISII=np.zeros(number_specific_slits)
-        SIIISII=np.zeros(number_specific_slits)
-        OIIOII=np.zeros(number_specific_slits)
-        NIIOII=np.zeros(number_specific_slits)
-        OIOII=np.zeros(number_specific_slits)
-        OIIIClIII=np.zeros(number_specific_slits)
-        SIIIClIII=np.zeros(number_specific_slits)
-        OIIIArVI=np.zeros(number_specific_slits)
-        SIIIArVI=np.zeros(number_specific_slits)
-        NIIClIII=np.zeros(number_specific_slits)
-        
-    class Te_error:
-        NIISII=np.zeros(number_specific_slits)
-        OISII=np.zeros(number_specific_slits)
-        OIISII=np.zeros(number_specific_slits)
-        OIIISII=np.zeros(number_specific_slits)
-        SIIISII=np.zeros(number_specific_slits)
-        OIIOII=np.zeros(number_specific_slits)
-        NIIOII=np.zeros(number_specific_slits)
-        OIOII=np.zeros(number_specific_slits)
-        OIIIClIII=np.zeros(number_specific_slits)
-        SIIIClIII=np.zeros(number_specific_slits)
-        OIIIArVI=np.zeros(number_specific_slits)
-        SIIIArVI=np.zeros(number_specific_slits)
-        NIIClIII=np.zeros(number_specific_slits)
-    
-    class Ne_error:
-        NIISII=np.zeros(number_specific_slits)
-        OISII=np.zeros(number_specific_slits)
-        OIISII=np.zeros(number_specific_slits)
-        OIIISII=np.zeros(number_specific_slits)
-        SIIISII=np.zeros(number_specific_slits)
-        OIIOII=np.zeros(number_specific_slits)
-        NIIOII=np.zeros(number_specific_slits)
-        OIOII=np.zeros(number_specific_slits)
-        OIIIClIII=np.zeros(number_specific_slits)
-        SIIIClIII=np.zeros(number_specific_slits)
-        OIIIArVI=np.zeros(number_specific_slits)
-        SIIIArVI=np.zeros(number_specific_slits)
-        NIIClIII=np.zeros(number_specific_slits)
-    
+    Te = TeNe(number_specific_slits)
+    Ne = TeNe(number_specific_slits)
     return Te, Ne

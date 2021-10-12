@@ -6,6 +6,8 @@
 # to right and from bottom to top.
 # (C) Stavros Akras
 
+from __future__ import print_function
+
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage.interpolation import rotate

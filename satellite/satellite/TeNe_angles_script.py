@@ -6,6 +6,7 @@
 # and PyNeb_output_ionic_abund_per_angles.txt and PyNeb_output_Te_and_Ne_per_angles.txt)
 # (C) Stavros Akras
 
+from __future__ import print_function
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,263 +17,36 @@ import os
 from satellite import ionicabundances_angles_script as iaas
 from satellite import element_abundances_ICFs_angles_script as eaIas
 from satellite import norm_flux_error_script as nfes
-
-global file10
+from satellite import fluxes as flx
 
 def TeNe(flux_angles,flux_angles_error,ang,line_names,lines_available,param_estimated,param_requered,param_mod_name,param_model_values,par_plotname,par_plotymin,par_plotymax):
 
-    class Te:
-        NIISII=[]
-        OISII=[]
-        OIISII=[]
-        OIIISII=[]
-        SIIISII=[]
-        OIIOII=[]
-        NIIOII=[]
-        OIOII=[]
-        OIIIClIII=[]
-        SIIIClIII=[]
-        OIIIArVI=[]
-        SIIIArVI=[]
-        NIIClIII=[]
+    Te = flx.C_TeNe()
+    Te_error = flx.C_TeNe()
+    Te_fake = flx.C_TeNe()
+    
+    Ne = flx.C_TeNe()
+    Ne_error = flx.C_TeNe()
+    Ne_fake = flx.C_TeNe()
 
-    class Ne:
-        NIISII=[]
-        OISII=[]
-        OIISII=[]
-        OIIISII=[]
-        SIIISII=[]
-        OIIOII=[]
-        NIIOII=[]
-        OIOII=[]
-        OIIIClIII=[]
-        SIIIClIII=[]
-        OIIIArVI=[]
-        SIIIArVI=[]
-        NIIClIII=[]
-        
-    class Te_error:
-        NIISII=[]
-        OISII=[]
-        OIISII=[]
-        OIIISII=[]
-        SIIISII=[]
-        OIIOII=[]
-        NIIOII=[]
-        OIOII=[]
-        OIIIClIII=[]
-        SIIIClIII=[]
-        OIIIArVI=[]
-        SIIIArVI=[]
-        NIIClIII=[]
-        
-    class Ne_error:
-        NIISII=[]
-        OISII=[]
-        OIISII=[]
-        OIIISII=[]
-        SIIISII=[]
-        OIIOII=[]
-        NIIOII=[]
-        OIOII=[]
-        OIIIClIII=[]
-        SIIIClIII=[]
-        OIIIArVI=[]
-        SIIIArVI=[]
-        NIIClIII=[]
-        
-    class Te_fake:
-        NIISII=[]
-        OISII=[]
-        OIISII=[]
-        OIIISII=[]
-        SIIISII=[]
-        OIIOII=[]
-        NIIOII=[]
-        OIOII=[]
-        OIIIClIII=[]
-        SIIIClIII=[]
-        OIIIArVI=[]
-        SIIIArVI=[]
-        NIIClIII=[]
-        
-    class Ne_fake:
-        NIISII=[]
-        OISII=[]
-        OIISII=[]
-        OIIISII=[]
-        SIIISII=[]
-        OIIOII=[]
-        NIIOII=[]
-        OIOII=[]
-        OIIIClIII=[]
-        SIIIClIII=[]
-        OIIIArVI=[]
-        SIIIArVI=[]
-        NIIClIII=[]    
+    ion_abun = flx.Ion_Abun()
+    ion_abun_error = flx.Ion_Abun()
+
+    elem_abun_KB = flx.Elem_Abun_KB()
+    elem_abun_KB_error = flx.Elem_Abun_KB()
+    elem_abun_KB_ratio = flx.Elem_Abun_KB_Ratio()
+    elem_abun_KB_ratio_error = flx.Elem_Abun_KB_Ratio()
     
-    class ion_abun:
-        HeIa=[]
-        HeIb=[]
-        HeIIa=[]
-        HeIIb=[]
-        NI=[]
-        NIIa=[]
-        NIIb=[]
-        NIIc=[]
-        OIa=[]
-        OIb=[]
-        OIc=[]
-        OIIa=[]
-        OIIb=[]
-        OIIc=[]
-        OIId=[]
-        OIIIa=[]
-        OIIIb=[]
-        OIIIc=[]
-        SIIa=[]
-        SIIb=[]
-        SIIIa=[]
-        SIIIb=[]
-        NeIIIa=[]
-        NeIIIb=[]
-        ArIII=[]
-        ArIVa=[]
-        ArIVb=[]
-        ClIIIa=[]
-        ClIIIb=[]
+    elem_ICF_KB = flx.Elem_Abun_KB()
+    elem_ICF_KB_error = flx.Elem_Abun_KB()
     
-    class ion_abun_error:
-        HeIa=[]
-        HeIb=[]
-        HeIIa=[]
-        HeIIb=[]
-        NI=[]
-        NIIa=[]
-        NIIb=[]
-        NIIc=[]
-        OIa=[]
-        OIb=[]
-        OIc=[]
-        OIIa=[]
-        OIIb=[]
-        OIIc=[]
-        OIId=[]
-        OIIIa=[]
-        OIIIb=[]
-        OIIIc=[]
-        SIIa=[]
-        SIIb=[]
-        SIIIa=[]
-        SIIIb=[]
-        NeIIIa=[]
-        NeIIIb=[]
-        ArIII=[]
-        ArIVa=[]
-        ArIVb=[]
-        ClIIIa=[]
-        ClIIIb=[]
+    elem_abun_DIMS = flx.Elem_Abun_KB()
+    elem_abun_DIMS_error = flx.Elem_Abun_KB()
+    elem_abun_DIMS_ratio = flx.Elem_Abun_KB_Ratio()
+    elem_abun_DIMS_ratio_error = flx.Elem_Abun_KB_Ratio()
     
-    class elem_abun_KB:
-        He=[]
-        N=[]
-        O=[]
-        S=[]
-        Ne=[]
-        Ar=[]
-        Cl=[]
-    
-    class elem_abun_KB_ratio:
-        NO=[]
-        SO=[]
-        NeO=[]
-        ArO=[]
-        ClO=[]
-    
-    class elem_ICF_KB:
-        He=[]
-        N=[]
-        O=[]
-        S=[]
-        Ne=[]
-        Ar=[]
-        Cl=[]
-        
-    class elem_abun_DIMS:
-        He=[]
-        N=[]
-        O=[]
-        S=[]
-        Ne=[]
-        Ar=[]
-        Cl=[]
-    
-    class elem_abun_DIMS_ratio:
-        NO=[]
-        SO=[]
-        NeO=[]
-        ArO=[]
-        ClO=[]
-    
-    class elem_ICF_DIMS:
-        He=[]
-        N=[]
-        O=[]
-        S=[]
-        Ne=[]
-        Ar=[]
-        Cl=[]
-        
-        
-    class elem_abun_KB_error:
-        He=[]
-        N=[]
-        O=[]
-        S=[]
-        Ne=[]
-        Ar=[]
-        Cl=[]
-    
-    class elem_abun_KB_ratio_error:
-        NO=[]
-        SO=[]
-        NeO=[]
-        ArO=[]
-        ClO=[]
-    
-    class elem_ICF_KB_error:
-        He=[]
-        N=[]
-        O=[]
-        S=[]
-        Ne=[]
-        Ar=[]
-        Cl=[]
-        
-    class elem_abun_DIMS_error:
-        He=[]
-        N=[]
-        O=[]
-        S=[]
-        Ne=[]
-        Ar=[]
-        Cl=[]
-    
-    class elem_abun_DIMS_ratio_error:
-        NO=[]
-        SO=[]
-        NeO=[]
-        ArO=[]
-        ClO=[]
-    
-    class elem_ICF_DIMS_error:
-        He=[]
-        N=[]
-        O=[]
-        S=[]
-        Ne=[]
-        Ar=[]
-        Cl=[]    
+    elem_ICF_DIMS = flx.Elem_Abun_KB()
+    elem_ICF_DIMS_error = flx.Elem_Abun_KB()
         
     ####################
     ### for all the angle in the rotation angle task###

@@ -3,89 +3,20 @@
 # The minimum S/N is given by the parameter "value"
 # (C) Stavros Akras
 
-import numpy as np
+from __future__ import print_function
 
+import numpy as np
+from satellite import fluxes as flx
+from copy import deepcopy
 
 def exclude_problematic_error_values(flux2D,flux2D_error,param_mod_name,param_model_values):
     index_size=param_mod_name.index("total_num_pixels_horiz")
     sizex=param_model_values[index_size]
     sizey=param_model_values[index_size]
     
-    
-    class flux2D_new:
-        Ha_6563=np.zeros((sizex, sizey))
-        Hb_4861=np.zeros((sizex, sizey))
-        Hg_4340=np.zeros((sizex, sizey))
-        Hd_4101=np.zeros((sizex, sizey))
-        HeIa_5876=np.zeros((sizex, sizey))
-        HeIb_6678=np.zeros((sizex, sizey))
-        HeIIa_4686=np.zeros((sizex, sizey))
-        HeIIb_5412=np.zeros((sizex, sizey))
-        NIIa_5755=np.zeros((sizex, sizey))
-        NIIb_6548=np.zeros((sizex, sizey))
-        NIIc_6584=np.zeros((sizex, sizey))
-        NI_5199=np.zeros((sizex, sizey))
-        OIIIa_4363=np.zeros((sizex, sizey))
-        OIIIb_4959=np.zeros((sizex, sizey))
-        OIIIc_5007=np.zeros((sizex, sizey))
-        OIIa_3727=np.zeros((sizex, sizey))
-        OIIb_3729=np.zeros((sizex, sizey))
-        OIIc_7320=np.zeros((sizex, sizey))
-        OIId_7330=np.zeros((sizex, sizey))
-        OIa_5577=np.zeros((sizex, sizey))
-        OIb_6300=np.zeros((sizex, sizey))
-        OIc_6363=np.zeros((sizex, sizey))
-        SIIa_6716=np.zeros((sizex, sizey))
-        SIIb_6731=np.zeros((sizex, sizey))
-        SIIIa_6312=np.zeros((sizex, sizey))
-        SIIIb_9069=np.zeros((sizex, sizey))
-        ClIIIa_5517=np.zeros((sizex, sizey))
-        ClIIIb_5538=np.zeros((sizex, sizey))
-        ArIII_7136=np.zeros((sizex, sizey))
-        ArIVa_4712=np.zeros((sizex, sizey))
-        ArIVb_4740=np.zeros((sizex, sizey))
-        CI_8727=np.zeros((sizex, sizey))
-        CII_6461=np.zeros((sizex, sizey))
-        NeIIIa_3868=np.zeros((sizex, sizey))
-        NeIIIb_3967=np.zeros((sizex, sizey))
+    flux2D_new = deepcopy(flux2D)
+    flux2D_new_error = deepcopy(flux2D_error)
 
-    class flux2D_new_error:
-        Ha_6563=np.zeros((sizex, sizey))
-        Hb_4861=np.zeros((sizex, sizey))
-        Hg_4340=np.zeros((sizex, sizey))
-        Hd_4101=np.zeros((sizex, sizey))
-        HeIa_5876=np.zeros((sizex, sizey))
-        HeIb_6678=np.zeros((sizex, sizey))
-        HeIIa_4686=np.zeros((sizex, sizey))
-        HeIIb_5412=np.zeros((sizex, sizey))
-        NIIa_5755=np.zeros((sizex, sizey))
-        NIIb_6548=np.zeros((sizex, sizey))
-        NIIc_6584=np.zeros((sizex, sizey))
-        NI_5199=np.zeros((sizex, sizey))
-        OIIIa_4363=np.zeros((sizex, sizey))
-        OIIIb_4959=np.zeros((sizex, sizey))
-        OIIIc_5007=np.zeros((sizex, sizey))
-        OIIa_3727=np.zeros((sizex, sizey))
-        OIIb_3729=np.zeros((sizex, sizey))
-        OIIc_7320=np.zeros((sizex, sizey))
-        OIId_7330=np.zeros((sizex, sizey))
-        OIa_5577=np.zeros((sizex, sizey))
-        OIb_6300=np.zeros((sizex, sizey))
-        OIc_6363=np.zeros((sizex, sizey))
-        SIIa_6716=np.zeros((sizex, sizey))
-        SIIb_6731=np.zeros((sizex, sizey))
-        SIIIa_6312=np.zeros((sizex, sizey))
-        SIIIb_9069=np.zeros((sizex, sizey))
-        ClIIIa_5517=np.zeros((sizex, sizey))
-        ClIIIb_5538=np.zeros((sizex, sizey))
-        ArIII_7136=np.zeros((sizex, sizey))
-        ArIVa_4712=np.zeros((sizex, sizey))
-        ArIVb_4740=np.zeros((sizex, sizey))
-        CI_8727=np.zeros((sizex, sizey))
-        CII_6461=np.zeros((sizex, sizey))
-        NeIIIa_3868=np.zeros((sizex, sizey))
-        NeIIIb_3967=np.zeros((sizex, sizey))
-    
 ######################################################################    
 ###this value defined the limit (SNR) of the acceptanced measurements 
 ######################################################################

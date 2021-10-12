@@ -3,10 +3,11 @@
 # in the specific slits analysis module.
 # (C) Stavros Akras
 
+from __future__ import print_function
+
 import numpy as np
 import pyneb as pn
 from numpy import inf
-
 
 from satellite import norm_flux_error_script as nfes
 

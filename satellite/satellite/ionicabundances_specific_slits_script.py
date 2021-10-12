@@ -2,6 +2,8 @@
 # Calculates the ionic abundances for each of the 10 pseudo-slits in the specific slits analysis module
 # (C) Stavros Akras
 
+from __future__ import print_function
+
 import numpy as np
 import pyneb as pn
 import warnings

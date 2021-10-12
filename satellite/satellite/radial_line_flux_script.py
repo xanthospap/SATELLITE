@@ -91,8 +91,9 @@ def radialfluxline(flux,flux_err,angle,haa,hbb,widthslit,lengthslit,max_width,pi
                 arcsec2[ll]=arcsec[i]
                 ll=ll+1
         
-        file10 = open('general_output_file.txt','a')        
-        if widthslit>max_width or lengthslit>max_width: print("Sorry, your slit width or/and length are larger that the true size of the image", file=file10)
+        with open('general_output_file.txt','a') as fout:
+            if widthslit>max_width or lengthslit>max_width:
+                print("Sorry, your slit width or/and length are larger that the true size of the image", file=fout)
         
         return radial_flux_table2,radial_flux_table2_error,arcsec2       
                 

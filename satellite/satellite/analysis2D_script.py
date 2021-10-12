@@ -2,6 +2,7 @@
 # Construct all the emission line diagnostic diagrams
 # (C) Stavros Akras
 
+from __future__ import print_function
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,7 +14,7 @@ from satellite import diagnotic_diagrams_script as dds
 from satellite import generate_2D_lineratio_maps_script as g2Dlrs
 from satellite import calculations_excluding_outliers_script as ceos 
 from satellite import norm_flux_error_script as nfes
-
+from satellite import fluxes as flx
 
         
 def analysis2D(flux2D,flux2D_error,flux_angles_norm,ang,line_names,line_ext_error,lines_available,lines_radial,param_estimated,param_requered,param_mod_name,param_model_values,DD_name,DD_avail,DDxmin,DDxmax,DDymin,DDymax,hdr,flux_spec_slit_norm,flux_spec_slit_norm_error):
@@ -22,82 +23,8 @@ def analysis2D(flux2D,flux2D_error,flux_angles_norm,ang,line_names,line_ext_erro
     sizex=param_model_values[index_size]
     sizey=param_model_values[index_size]            
     
-    
-    class flux_norm_2D:
-        Ha_6563=np.zeros((sizex, sizey))
-        Hb_4861=np.zeros((sizex, sizey))
-        Hg_4340=np.zeros((sizex, sizey))
-        Hd_4101=np.zeros((sizex, sizey))
-        HeIa_5876=np.zeros((sizex, sizey))
-        HeIb_6678=np.zeros((sizex, sizey))
-        HeIIa_4686=np.zeros((sizex, sizey))
-        HeIIb_5412=np.zeros((sizex, sizey))
-        NIIa_5755=np.zeros((sizex, sizey))
-        NIIb_6548=np.zeros((sizex, sizey))
-        NIIc_6584=np.zeros((sizex, sizey))
-        NI_5199=np.zeros((sizex, sizey))
-        OIIIa_4363=np.zeros((sizex, sizey))
-        OIIIb_4959=np.zeros((sizex, sizey))
-        OIIIc_5007=np.zeros((sizex, sizey))
-        OIIa_3727=np.zeros((sizex, sizey))
-        OIIb_3729=np.zeros((sizex, sizey))
-        OIIc_7320=np.zeros((sizex, sizey))
-        OIId_7330=np.zeros((sizex, sizey))
-        OIa_5577=np.zeros((sizex, sizey))
-        OIb_6300=np.zeros((sizex, sizey))
-        OIc_6363=np.zeros((sizex, sizey))
-        SIIa_6716=np.zeros((sizex, sizey))
-        SIIb_6731=np.zeros((sizex, sizey))
-        SIIIa_6312=np.zeros((sizex, sizey))
-        SIIIb_9069=np.zeros((sizex, sizey))
-        ClIIIa_5517=np.zeros((sizex, sizey))
-        ClIIIb_5538=np.zeros((sizex, sizey))
-        ArIII_7136=np.zeros((sizex, sizey))
-        ArIVa_4712=np.zeros((sizex, sizey))
-        ArIVb_4740=np.zeros((sizex, sizey))
-        CI_8727=np.zeros((sizex, sizey))
-        CII_6461=np.zeros((sizex, sizey))
-        NeIIIa_3868=np.zeros((sizex, sizey))
-        NeIIIb_3967=np.zeros((sizex, sizey))
-
-    class flux_norm_2D_error:
-        Ha_6563=np.zeros((sizex, sizey))
-        Hb_4861=np.zeros((sizex, sizey))
-        Hg_4340=np.zeros((sizex, sizey))
-        Hd_4101=np.zeros((sizex, sizey))
-        HeIa_5876=np.zeros((sizex, sizey))
-        HeIb_6678=np.zeros((sizex, sizey))
-        HeIIa_4686=np.zeros((sizex, sizey))
-        HeIIb_5412=np.zeros((sizex, sizey))
-        NIIa_5755=np.zeros((sizex, sizey))
-        NIIb_6548=np.zeros((sizex, sizey))
-        NIIc_6584=np.zeros((sizex, sizey))
-        NI_5199=np.zeros((sizex, sizey))
-        OIIIa_4363=np.zeros((sizex, sizey))
-        OIIIb_4959=np.zeros((sizex, sizey))
-        OIIIc_5007=np.zeros((sizex, sizey))
-        OIIa_3727=np.zeros((sizex, sizey))
-        OIIb_3729=np.zeros((sizex, sizey))
-        OIIc_7320=np.zeros((sizex, sizey))
-        OIId_7330=np.zeros((sizex, sizey))
-        OIa_5577=np.zeros((sizex, sizey))
-        OIb_6300=np.zeros((sizex, sizey))
-        OIc_6363=np.zeros((sizex, sizey))
-        SIIa_6716=np.zeros((sizex, sizey))
-        SIIb_6731=np.zeros((sizex, sizey))
-        SIIIa_6312=np.zeros((sizex, sizey))
-        SIIIb_9069=np.zeros((sizex, sizey))
-        ClIIIa_5517=np.zeros((sizex, sizey))
-        ClIIIb_5538=np.zeros((sizex, sizey))
-        ArIII_7136=np.zeros((sizex, sizey))
-        ArIVa_4712=np.zeros((sizex, sizey))
-        ArIVb_4740=np.zeros((sizex, sizey))
-        CI_8727=np.zeros((sizex, sizey))
-        CII_6461=np.zeros((sizex, sizey))
-        NeIIIa_3868=np.zeros((sizex, sizey))
-        NeIIIb_3967=np.zeros((sizex, sizey))
-
-        
+    flux_norm_2D = flx.Flux2D(sizex, sizey)
+    flux_norm_2D_error = flx.Flux2D(sizex, sizey)
         
     pn.log_.open_file('my_log.txt')
     
@@ -678,6 +605,8 @@ def analysis2D(flux2D,flux2D_error,flux_angles_norm,ang,line_names,line_ext_erro
                 corArIVb_er=RC.getErrCorr(4740, np.std(obs_fake.extinction.E_BV),4861)  
             
 
+                print("i={:}, j={:}".format(i,j))
+                print("obs.getIntens()['H1r_6563A']={:}".format(float(obs.getIntens()['H1r_6563A'])))
                 flux_norm_2D.Ha_6563[i,j]=float(obs.getIntens()['H1r_6563A'])
                 flux_norm_2D.Hb_4861[i,j]=float(obs.getIntens()['H1r_4861A'])
                 par1=float(obs.getError()['H1r_6563A'])

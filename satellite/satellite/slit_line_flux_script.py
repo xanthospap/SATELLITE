@@ -11,6 +11,8 @@
 # the position of the sources.
 # (C) Stavros Akras
 
+from __future__ import print_function
+
 import numpy as np
 from scipy.ndimage.interpolation import rotate
 

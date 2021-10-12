@@ -2,6 +2,8 @@
 # 
 # (C) Stavros Akras
 
+from __future__ import print_function
+
 import numpy as np
 
 from satellite import line_ratio_script as lrs

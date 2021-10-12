@@ -3,6 +3,8 @@
 # from the central star or central point of the nebula in the radial analysis module.
 # (C) Stavros Akras
 
+from __future__ import print_function
+
 import numpy as np
 import pyneb as pn
 from numpy import inf

@@ -2,6 +2,7 @@
 # Calculates the ionic abundances for each pseudo-slits in the rotation analysis module.
 # (C) Stavros Akras
 
+from __future__ import print_function
 import numpy as np
 import pyneb as pn
 import warnings

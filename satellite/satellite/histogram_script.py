@@ -3,9 +3,9 @@
 # (c(Hb), Te, Ne, ionic/elemental abundances and ICFs, saved in the output plots folder)
 # (C) Stavros Akras
 
+from __future__ import print_function
 
 import numpy as np
-#import matplotlib
 import matplotlib.pyplot as plt
 
 from scipy.stats import norm
