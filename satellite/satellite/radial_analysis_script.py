@@ -5,6 +5,8 @@
 # for r > r_mim (given by used)
 # (C) Stavros Akras
 
+from __future__ import print_function
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pyneb as pn
@@ -13,161 +15,51 @@ from satellite import radial_line_flux_script as rlfs
 from satellite import find_maxvlaue_script as fms
 from satellite import testing_unequal_arrays_script as tuas
 from satellite import norm_flux_error_script as nfes
-
+from satellite import fluxes as flx
 
 def radial_analysis(flux2D, flux2D_error, line_names, line_ext_error,
                     lines_available, lines_radial, param_mod_name,
                     param_model_values, par_plotname, par_plotymin,
                     par_plotymax):
 
-    class flux_radial:
-        Ha_6563 = []
-        Hb_4861 = []
-        Hg_4340 = []
-        Hd_4101 = []
-        HeIa_5876 = []
-        HeIb_6678 = []
-        HeIIa_4686 = []
-        HeIIb_5412 = []
-        NIIa_5755 = []
-        NIIb_6548 = []
-        NIIc_6584 = []
-        NI_5199 = []
-        OIIIa_4363 = []
-        OIIIb_4959 = []
-        OIIIc_5007 = []
-        OIIa_3727 = []
-        OIIb_3729 = []
-        OIIc_7320 = []
-        OIId_7330 = []
-        OIa_5577 = []
-        OIb_6300 = []
-        OIc_6363 = []
-        SIIa_6716 = []
-        SIIb_6731 = []
-        SIIIa_6312 = []
-        SIIIb_9069 = []
-        ClIIIa_5517 = []
-        ClIIIb_5538 = []
-        ArIII_7136 = []
-        ArIVa_4712 = []
-        ArIVb_4740 = []
-        CI_8727 = []
-        CII_6461 = []
-        NeIIIa_3868 = []
-        NeIIIb_3967 = []
 
-    class flux_radial_error:
-        Ha_6563 = []
-        Hb_4861 = []
-        Hg_4340 = []
-        Hd_4101 = []
-        HeIa_5876 = []
-        HeIb_6678 = []
-        HeIIa_4686 = []
-        HeIIb_5412 = []
-        NIIa_5755 = []
-        NIIb_6548 = []
-        NIIc_6584 = []
-        NI_5199 = []
-        OIIIa_4363 = []
-        OIIIb_4959 = []
-        OIIIc_5007 = []
-        OIIa_3727 = []
-        OIIb_3729 = []
-        OIIc_7320 = []
-        OIId_7330 = []
-        OIa_5577 = []
-        OIb_6300 = []
-        OIc_6363 = []
-        SIIa_6716 = []
-        SIIb_6731 = []
-        SIIIa_6312 = []
-        SIIIb_9069 = []
-        ClIIIa_5517 = []
-        ClIIIb_5538 = []
-        ArIII_7136 = []
-        ArIVa_4712 = []
-        ArIVb_4740 = []
-        CI_8727 = []
-        CII_6461 = []
-        NeIIIa_3868 = []
-        NeIIIb_3967 = []
+    flux_radial = flx.Flux2D()
+    flux_radial_error = flx.Flux2D()
+    flux_radial_derred = flx.Flux2D()
+    flux_radial_derred_error = flx.Flux2D()
+        
+    file10 = open('general_output_file.txt','a')
+    file2 = open('output_linesintensities_reddered_radial.txt','w')
+    file22 = open('output_linesintensities_dereddered_radial.txt','w')
+  
 
-    class flux_radial_derred:
-        Ha_6563 = []
-        Hb_4861 = []
-        Hg_4340 = []
-        Hd_4101 = []
-        HeIa_5876 = []
-        HeIb_6678 = []
-        HeIIa_4686 = []
-        HeIIb_5412 = []
-        NIIa_5755 = []
-        NIIb_6548 = []
-        NIIc_6584 = []
-        NI_5199 = []
-        OIIIa_4363 = []
-        OIIIb_4959 = []
-        OIIIc_5007 = []
-        OIIa_3727 = []
-        OIIb_3729 = []
-        OIIc_7320 = []
-        OIId_7330 = []
-        OIa_5577 = []
-        OIb_6300 = []
-        OIc_6363 = []
-        SIIa_6716 = []
-        SIIb_6731 = []
-        SIIIa_6312 = []
-        SIIIb_9069 = []
-        ClIIIa_5517 = []
-        ClIIIb_5538 = []
-        ArIII_7136 = []
-        ArIVa_4712 = []
-        ArIVb_4740 = []
-        CI_8727 = []
-        CII_6461 = []
-        NeIIIa_3868 = []
-        NeIIIb_3967 = []
+    index_pixel_scale=param_mod_name.index("pixel_scale")
+    pixscale=float(param_model_values[index_pixel_scale])*0.01
 
-    class flux_radial_derred_error:
-        Ha_6563 = []
-        Hb_4861 = []
-        Hg_4340 = []
-        Hd_4101 = []
-        HeIa_5876 = []
-        HeIb_6678 = []
-        HeIIa_4686 = []
-        HeIIb_5412 = []
-        NIIa_5755 = []
-        NIIb_6548 = []
-        NIIc_6584 = []
-        NI_5199 = []
-        OIIIa_4363 = []
-        OIIIb_4959 = []
-        OIIIc_5007 = []
-        OIIa_3727 = []
-        OIIb_3729 = []
-        OIIc_7320 = []
-        OIId_7330 = []
-        OIa_5577 = []
-        OIb_6300 = []
-        OIc_6363 = []
-        SIIa_6716 = []
-        SIIb_6731 = []
-        SIIIa_6312 = []
-        SIIIb_9069 = []
-        ClIIIa_5517 = []
-        ClIIIb_5538 = []
-        ArIII_7136 = []
-        ArIVa_4712 = []
-        ArIVb_4740 = []
-        CI_8727 = []
-        CII_6461 = []
-        NeIIIa_3868 = []
-        NeIIIb_3967 = []
+    index_tot_pix=param_mod_name.index("total_num_pixels_horiz")
+    index_slit_wid=param_mod_name.index("slit_width_in_spaxels")
+    index_slit_len=param_mod_name.index("slit_length_in_spaxels")
+    slitwidth=param_model_values[index_slit_wid]
+    slitlength=param_model_values[index_slit_len]
+    maxsize=param_model_values[index_tot_pix]
+    
+    
+    index_angle_radial=param_mod_name.index("angle_for_radial_flux")    
+    angle_for_radial=param_model_values[index_angle_radial]
 
+    print("#######################################################################################", file=file10)
+    print("#######################################################################################", file=file10)
+    print("#######################################################################################", file=file10)
+    print("#######################################################################################", file=file10)
+    print("#######################################################################################", file=file10)
+    print("#######################################################################################", file=file10)
+    print("#######################################################################################", file=file10)
+    print("#######################################################################################", file=file10)
+    print("#######################################################################################", file=file10)
+    fig,ax3=plt.subplots(figsize=(12,7))
+    
+    cHb,cHb_err,radial_dis_arc2=[],[],[]
+    
     file10 = open('general_output_file.txt', 'a')
     file2 = open('output_linesintensities_reddered_radial.txt', 'w')
     file22 = open('output_linesintensities_dereddered_radial.txt', 'w')
@@ -215,8 +107,6 @@ def radial_analysis(flux2D, flux2D_error, line_names, line_ext_error,
     fig, ax3 = plt.subplots(figsize=(12, 7))
 
     cHb, cHb_err, radial_dis_arc2 = [], [], []
-
-    flux_radial_derred.Ha_6563,flux_radial_derred.Hb_4861,flux_radial_derred.Hg_4340,flux_radial_derred.Hd_4101,flux_radial_derred.HeIa_5876,flux_radial_derred.HeIb_6678,flux_radial_derred.HeIIa_4686,flux_radial_derred.HeIIb_5412,flux_radial_derred.OIa_5577,flux_radial_derred.OIb_6300,flux_radial_derred.OIc_6363,flux_radial_derred.OIIa_3727,flux_radial_derred.OIIb_3729,flux_radial_derred.OIIc_7320,flux_radial_derred.OIId_7330,flux_radial_derred.OIIIa_4363,flux_radial_derred.OIIIb_4959,flux_radial_derred.OIIIc_5007,flux_radial_derred.NI_5199,flux_radial_derred.NIIa_5755,flux_radial_derred.NIIb_6548,flux_radial_derred.NIIc_6584,flux_radial_derred.SIIa_6716,flux_radial_derred.SIIb_6731,flux_radial_derred.SIIIa_6312,flux_radial_derred.SIIIb_9069,flux_radial_derred.NeIIIa_3868,flux_radial_derred.NeIIIb_3967,flux_radial_derred.ArIII_7136,flux_radial_derred.ArIVa_4712,flux_radial_derred.ArIVb_4740,flux_radial_derred.ClIIIa_5517,flux_radial_derred.ClIIIb_5538,flux_radial_derred.CI_8727,flux_radial_derred.CII_6461=[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]
 
     flux_radial_derred_error.Ha_6563,flux_radial_derred_error.Hb_4861,flux_radial_derred_error.Hg_4340,flux_radial_derred_error.Hd_4101,flux_radial_derred_error.HeIa_5876,flux_radial_derred_error.HeIb_6678,flux_radial_derred_error.HeIIa_4686,flux_radial_derred_error.HeIIb_5412,flux_radial_derred_error.OIa_5577,flux_radial_derred_error.OIb_6300,flux_radial_derred_error.OIc_6363,flux_radial_derred_error.OIIa_3727,flux_radial_derred_error.OIIb_3729,flux_radial_derred_error.OIIc_7320,flux_radial_derred_error.OIId_7330,flux_radial_derred_error.OIIIa_4363,flux_radial_derred_error.OIIIb_4959,flux_radial_derred_error.OIIIc_5007,flux_radial_derred_error.NI_5199,flux_radial_derred_error.NIIa_5755,flux_radial_derred_error.NIIb_6548,flux_radial_derred_error.NIIc_6584,flux_radial_derred_error.SIIa_6716,flux_radial_derred_error.SIIb_6731,flux_radial_derred_error.SIIIa_6312,flux_radial_derred_error.SIIIb_9069,flux_radial_derred_error.NeIIIa_3868,flux_radial_derred_error.NeIIIb_3967,flux_radial_derred_error.ArIII_7136,flux_radial_derred_error.ArIVa_4712,flux_radial_derred_error.ArIVb_4740,flux_radial_derred_error.ClIIIa_5517,flux_radial_derred_error.ClIIIb_5538,flux_radial_derred_error.CI_8727,flux_radial_derred_error.CII_6461=[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]
 
