@@ -16,7 +16,6 @@ from satellite import std_value_script as svs
 
 def NIISIIplot(numerator1, denominator1, numerator2, denominator2, sizex,
                sizey):
-    file10 = open('general_output_file.txt', 'a')
 
     data_pos_ratio1 = []
 
@@ -36,15 +35,16 @@ def NIISIIplot(numerator1, denominator1, numerator2, denominator2, sizex,
     mean_ratio2 = mvs.meanvalue(data_pos_ratio2, -10)
     std_ratio2 = svs.stdvalue(data_pos_ratio2, mean_ratio2, -10)
 
-    print("log(Ha/[N II] 6548+6584)",
-          "%.3f" % mean_ratio1,
-          "sigma",
-          "%.3f" % std_ratio1,
-          "log(Ha/[S II] 6716+6731)",
-          "%.3f" % mean_ratio2,
-          "sigma",
-          "%.3f" % std_ratio2,
-          file=file10)
+    with open('general_output_file.txt', 'a') as f10:
+        print("log(Ha/[N II] 6548+6584)",
+              "%.3f" % mean_ratio1,
+              "sigma",
+              "%.3f" % std_ratio1,
+              "log(Ha/[S II] 6716+6731)",
+              "%.3f" % mean_ratio2,
+              "sigma",
+              "%.3f" % std_ratio2,
+              file=f10)
 
     maxper = 75
     minper = 25
@@ -106,8 +106,6 @@ def NIISIIplot(numerator1, denominator1, numerator2, denominator2, sizex,
 
 def OIIINIIplot(numerator1, denominator1, numerator2, denominator2, sizex,
                 sizey):
-    file10 = open('general_output_file.txt', 'a')
-
     data_pos_ratio1 = []
 
     data_ratio1 = lrs.lineratio(numerator1, denominator1, sizex, sizey, 0)
@@ -126,15 +124,17 @@ def OIIINIIplot(numerator1, denominator1, numerator2, denominator2, sizex,
     mean_ratio2 = mvs.meanvalue(data_pos_ratio2, -10)
     std_ratio2 = svs.stdvalue(data_pos_ratio2, mean_ratio2, -10)
 
-    print("log([O III] 5007/Hb)",
-          "%.3f" % mean_ratio1,
-          "sigma",
-          "%.3f" % std_ratio1,
-          "log([N II] 6584/Ha)",
-          "%.3f" % mean_ratio2,
-          "sigma",
-          "%.3f" % std_ratio2,
-          file=file10)
+    with open('general_output_file.txt', 'a') as f10:
+
+        print("log([O III] 5007/Hb)",
+              "%.3f" % mean_ratio1,
+              "sigma",
+              "%.3f" % std_ratio1,
+              "log([N II] 6584/Ha)",
+              "%.3f" % mean_ratio2,
+              "sigma",
+              "%.3f" % std_ratio2,
+              file=f10)
 
     maxper = 75
     minper = 25
@@ -196,8 +196,6 @@ def OIIINIIplot(numerator1, denominator1, numerator2, denominator2, sizex,
 
 def OIIISIIplot(numerator1, denominator1, numerator2, denominator2, sizex,
                 sizey):
-    file10 = open('general_output_file.txt', 'a')
-
     data_pos_ratio1 = []
 
     data_ratio1 = lrs.lineratio(numerator1, denominator1, sizex, sizey, 0)
@@ -216,15 +214,17 @@ def OIIISIIplot(numerator1, denominator1, numerator2, denominator2, sizex,
     mean_ratio2 = mvs.meanvalue(data_pos_ratio2, -10)
     std_ratio2 = svs.stdvalue(data_pos_ratio2, mean_ratio2, -10)
 
-    print("log([O III] 5007/Hb)",
-          "%.3f" % mean_ratio1,
-          "sigma",
-          "%.3f" % std_ratio1,
-          "log([S II] 6716+6731/Ha)",
-          "%.3f" % mean_ratio2,
-          "sigma",
-          "%.3f" % std_ratio2,
-          file=file10)
+    with open('general_output_file.txt', 'a') as f10:
+
+        print("log([O III] 5007/Hb)",
+              "%.3f" % mean_ratio1,
+              "sigma",
+              "%.3f" % std_ratio1,
+              "log([S II] 6716+6731/Ha)",
+              "%.3f" % mean_ratio2,
+              "sigma",
+              "%.3f" % std_ratio2,
+              file=f10)
 
     maxper = 75
     minper = 25
@@ -286,8 +286,6 @@ def OIIISIIplot(numerator1, denominator1, numerator2, denominator2, sizex,
 
 def OIIIHeII4686plot(numerator1, denominator1, numerator2, denominator2, sizex,
                      sizey):
-    file10 = open('general_output_file.txt', 'a')
-
     data_pos_ratio1 = []
 
     data_ratio1 = lrs.lineratio(numerator1, denominator1, sizex, sizey, 0)
@@ -306,15 +304,17 @@ def OIIIHeII4686plot(numerator1, denominator1, numerator2, denominator2, sizex,
     mean_ratio2 = mvs.meanvalue(data_pos_ratio2, -10)
     std_ratio2 = svs.stdvalue(data_pos_ratio2, mean_ratio2, -10)
 
-    print("log([O III] 5007/Hb)",
-          "%.3f" % mean_ratio1,
-          "sigma",
-          "%.3f" % std_ratio1,
-          "log(He II 4686/Hb)",
-          "%.3f" % mean_ratio2,
-          "sigma",
-          "%.3f" % std_ratio2,
-          file=file10)
+    with open('general_output_file.txt', 'a') as f10:
+
+        print("log([O III] 5007/Hb)",
+              "%.3f" % mean_ratio1,
+              "sigma",
+              "%.3f" % std_ratio1,
+              "log(He II 4686/Hb)",
+              "%.3f" % mean_ratio2,
+              "sigma",
+              "%.3f" % std_ratio2,
+              file=f10)
 
     maxper = 75
     minper = 25
@@ -376,8 +376,6 @@ def OIIIHeII4686plot(numerator1, denominator1, numerator2, denominator2, sizex,
 
 def OIIIHeII5412plot(numerator1, denominator1, numerator2, denominator2, sizex,
                      sizey):
-    file10 = open('general_output_file.txt', 'a')
-
     data_pos_ratio1 = []
 
     data_ratio1 = lrs.lineratio(numerator1, denominator1, sizex, sizey, 0)
@@ -396,15 +394,17 @@ def OIIIHeII5412plot(numerator1, denominator1, numerator2, denominator2, sizex,
     mean_ratio2 = mvs.meanvalue(data_pos_ratio2, -10)
     std_ratio2 = svs.stdvalue(data_pos_ratio2, mean_ratio2, -10)
 
-    print("log([O III] 5007/Hb)",
-          "%.3f" % mean_ratio1,
-          "sigma",
-          "%.3f" % std_ratio1,
-          "log(He II 5412/Hb)",
-          "%.3f" % mean_ratio2,
-          "sigma",
-          "%.3f" % std_ratio2,
-          file=file10)
+    with open('general_output_file.txt', 'a') as f10:
+
+        print("log([O III] 5007/Hb)",
+              "%.3f" % mean_ratio1,
+              "sigma",
+              "%.3f" % std_ratio1,
+              "log(He II 5412/Hb)",
+              "%.3f" % mean_ratio2,
+              "sigma",
+              "%.3f" % std_ratio2,
+              file=f10)
 
     maxper = 75
     minper = 25
@@ -466,8 +466,6 @@ def OIIIHeII5412plot(numerator1, denominator1, numerator2, denominator2, sizex,
 
 def OIIINIplot(numerator1, denominator1, numerator2, denominator2, sizex,
                sizey):
-    file10 = open('general_output_file.txt', 'a')
-
     data_pos_ratio1 = []
 
     data_ratio1 = lrs.lineratio(numerator1, denominator1, sizex, sizey, 0)
@@ -486,15 +484,17 @@ def OIIINIplot(numerator1, denominator1, numerator2, denominator2, sizex,
     mean_ratio2 = mvs.meanvalue(data_pos_ratio2, -10)
     std_ratio2 = svs.stdvalue(data_pos_ratio2, mean_ratio2, -10)
 
-    print("log([O III] 5007/Hb)",
-          "%.3f" % mean_ratio1,
-          "sigma",
-          "%.3f" % std_ratio1,
-          "log([N I] 5199/Hb)",
-          "%.3f" % mean_ratio2,
-          "sigma",
-          "%.3f" % std_ratio2,
-          file=file10)
+    with open('general_output_file.txt', 'a') as f10:
+
+        print("log([O III] 5007/Hb)",
+              "%.3f" % mean_ratio1,
+              "sigma",
+              "%.3f" % std_ratio1,
+              "log([N I] 5199/Hb)",
+              "%.3f" % mean_ratio2,
+              "sigma",
+              "%.3f" % std_ratio2,
+              file=f10)
 
     maxper = 75
     minper = 25
@@ -556,7 +556,6 @@ def OIIINIplot(numerator1, denominator1, numerator2, denominator2, sizex,
 
 def OIIIOIplot(numerator1, denominator1, numerator2, denominator2, sizex,
                sizey):
-    file10 = open('general_output_file.txt', 'a')
 
     data_pos_ratio1 = []
 
@@ -576,15 +575,16 @@ def OIIIOIplot(numerator1, denominator1, numerator2, denominator2, sizex,
     mean_ratio2 = mvs.meanvalue(data_pos_ratio2, -10)
     std_ratio2 = svs.stdvalue(data_pos_ratio2, mean_ratio2, -10)
 
-    print("log([O III] 5007/Hb)",
-          "%.3f" % mean_ratio1,
-          "sigma",
-          "%.3f" % std_ratio1,
-          "log([O I] 6300/Ha)",
-          "%.3f" % mean_ratio2,
-          "sigma",
-          "%.3f" % std_ratio2,
-          file=file10)
+    with open('general_output_file.txt', 'a') as f10:
+        print("log([O III] 5007/Hb)",
+              "%.3f" % mean_ratio1,
+              "sigma",
+              "%.3f" % std_ratio1,
+              "log([O I] 6300/Ha)",
+              "%.3f" % mean_ratio2,
+              "sigma",
+              "%.3f" % std_ratio2,
+              file=f10)
 
     maxper = 75
     minper = 25
@@ -646,8 +646,6 @@ def OIIIOIplot(numerator1, denominator1, numerator2, denominator2, sizex,
 
 def OIIINII5755plot(numerator1, denominator1, numerator2, denominator2, sizex,
                     sizey):
-    file10 = open('general_output_file.txt', 'a')
-
     data_pos_ratio1 = []
 
     data_ratio1 = lrs.lineratio(numerator1, denominator1, sizex, sizey, 0)
@@ -666,15 +664,17 @@ def OIIINII5755plot(numerator1, denominator1, numerator2, denominator2, sizex,
     mean_ratio2 = mvs.meanvalue(data_pos_ratio2, -10)
     std_ratio2 = svs.stdvalue(data_pos_ratio2, mean_ratio2, -10)
 
-    print("log([O III] 5007/Hb)",
-          "%.3f" % mean_ratio1,
-          "sigma",
-          "%.3f" % std_ratio1,
-          "log([N II] 5755/Ha)",
-          "%.3f" % mean_ratio2,
-          "sigma",
-          "%.3f" % std_ratio2,
-          file=file10)
+    with open('general_output_file.txt', 'a') as f10:
+
+        print("log([O III] 5007/Hb)",
+              "%.3f" % mean_ratio1,
+              "sigma",
+              "%.3f" % std_ratio1,
+              "log([N II] 5755/Ha)",
+              "%.3f" % mean_ratio2,
+              "sigma",
+              "%.3f" % std_ratio2,
+              file=f10)
 
     maxper = 75
     minper = 25
@@ -736,8 +736,6 @@ def OIIINII5755plot(numerator1, denominator1, numerator2, denominator2, sizex,
 
 def SII67166731HaSIIplot(numerator1, denominator1, numerator2, denominator2,
                          sizex, sizey):
-    file10 = open('general_output_file.txt', 'a')
-
     data_pos_ratio1 = []
 
     data_ratio1 = lrs.lineratio(numerator1, denominator1, sizex, sizey, 2)
@@ -756,15 +754,17 @@ def SII67166731HaSIIplot(numerator1, denominator1, numerator2, denominator2,
     mean_ratio2 = mvs.meanvalue(data_pos_ratio2, -10)
     std_ratio2 = svs.stdvalue(data_pos_ratio2, mean_ratio2, -10)
 
-    print("[S II] 6716/6731",
-          "%.3f" % mean_ratio1,
-          "sigma",
-          "%.3f" % std_ratio1,
-          "log([Ha/[S II] 6716+6731)",
-          "%.3f" % mean_ratio2,
-          "sigma",
-          "%.3f" % std_ratio2,
-          file=file10)
+    with open('general_output_file.txt', 'a') as f10:
+
+        print("[S II] 6716/6731",
+              "%.3f" % mean_ratio1,
+              "sigma",
+              "%.3f" % std_ratio1,
+              "log([Ha/[S II] 6716+6731)",
+              "%.3f" % mean_ratio2,
+              "sigma",
+              "%.3f" % std_ratio2,
+              file=f10)
 
     maxper = 75
     minper = 25
@@ -826,8 +826,6 @@ def SII67166731HaSIIplot(numerator1, denominator1, numerator2, denominator2,
 
 def SII67166731HaNIIplot(numerator1, denominator1, numerator2, denominator2,
                          sizex, sizey):
-    file10 = open('general_output_file.txt', 'a')
-
     data_pos_ratio1 = []
 
     data_ratio1 = lrs.lineratio(numerator1, denominator1, sizex, sizey, 2)
@@ -846,15 +844,17 @@ def SII67166731HaNIIplot(numerator1, denominator1, numerator2, denominator2,
     mean_ratio2 = mvs.meanvalue(data_pos_ratio2, -10)
     std_ratio2 = svs.stdvalue(data_pos_ratio2, mean_ratio2, -10)
 
-    print("[S II] 6716/6731",
-          "%.3f" % mean_ratio1,
-          "sigma",
-          "%.3f" % std_ratio1,
-          "log([Ha/[N II] 6548+6584)",
-          "%.3f" % mean_ratio2,
-          "sigma",
-          "%.3f" % std_ratio2,
-          file=file10)
+    with open('general_output_file.txt', 'a') as f10:
+
+        print("[S II] 6716/6731",
+              "%.3f" % mean_ratio1,
+              "sigma",
+              "%.3f" % std_ratio1,
+              "log([Ha/[N II] 6548+6584)",
+              "%.3f" % mean_ratio2,
+              "sigma",
+              "%.3f" % std_ratio2,
+              file=f10)
 
     maxper = 75
     minper = 25
@@ -916,8 +916,6 @@ def SII67166731HaNIIplot(numerator1, denominator1, numerator2, denominator2,
 
 def NIISIISIIOIplot(numerator1, denominator1, numerator2, denominator2, sizex,
                     sizey):
-    file10 = open('general_output_file.txt', 'a')
-
     data_pos_ratio1 = []
 
     data_ratio1 = lrs.lineratio(numerator1, denominator1, sizex, sizey, 0)
@@ -936,15 +934,17 @@ def NIISIISIIOIplot(numerator1, denominator1, numerator2, denominator2, sizex,
     mean_ratio2 = mvs.meanvalue(data_pos_ratio2, -10)
     std_ratio2 = svs.stdvalue(data_pos_ratio2, mean_ratio2, -10)
 
-    print("log([N II] 6548+6584/[S II] 6716+6731)",
-          "%.3f" % mean_ratio1,
-          "sigma",
-          "%.3f" % std_ratio1,
-          "log([S II] 6716+6731/[O I] 6300+6363)",
-          "%.3f" % mean_ratio2,
-          "sigma",
-          "%.3f" % std_ratio2,
-          file=file10)
+    with open('general_output_file.txt', 'a') as f10:
+
+        print("log([N II] 6548+6584/[S II] 6716+6731)",
+              "%.3f" % mean_ratio1,
+              "sigma",
+              "%.3f" % std_ratio1,
+              "log([S II] 6716+6731/[O I] 6300+6363)",
+              "%.3f" % mean_ratio2,
+              "sigma",
+              "%.3f" % std_ratio2,
+              file=f10)
 
     maxper = 75
     minper = 25
@@ -1006,8 +1006,6 @@ def NIISIISIIOIplot(numerator1, denominator1, numerator2, denominator2, sizex,
 
 def NIISIINIIOIplot(numerator1, denominator1, numerator2, denominator2, sizex,
                     sizey):
-    file10 = open('general_output_file.txt', 'a')
-
     data_pos_ratio1 = []
 
     data_ratio1 = lrs.lineratio(numerator1, denominator1, sizex, sizey, 0)
@@ -1026,15 +1024,17 @@ def NIISIINIIOIplot(numerator1, denominator1, numerator2, denominator2, sizex,
     mean_ratio2 = mvs.meanvalue(data_pos_ratio2, -10)
     std_ratio2 = svs.stdvalue(data_pos_ratio2, mean_ratio2, -10)
 
-    print("log([N II] 6548+6584/[S II] 6716+6731)",
-          "%.3f" % mean_ratio1,
-          "sigma",
-          "%.3f" % std_ratio1,
-          "log([N II] 658+6584/[O I] 6300+6363)",
-          "%.3f" % mean_ratio2,
-          "sigma",
-          "%.3f" % std_ratio2,
-          file=file10)
+    with open('general_output_file.txt', 'a') as f10:
+
+        print("log([N II] 6548+6584/[S II] 6716+6731)",
+              "%.3f" % mean_ratio1,
+              "sigma",
+              "%.3f" % std_ratio1,
+              "log([N II] 658+6584/[O I] 6300+6363)",
+              "%.3f" % mean_ratio2,
+              "sigma",
+              "%.3f" % std_ratio2,
+              file=f10)
 
     maxper = 75
     minper = 25
@@ -1096,7 +1096,6 @@ def NIISIINIIOIplot(numerator1, denominator1, numerator2, denominator2, sizex,
 
 def OIIINII6584OIplot(numerator1, denominator1, numerator2, denominator2, sizex,
                       sizey):
-    file10 = open('general_output_file.txt', 'a')
 
     data_pos_ratio1 = []
 
@@ -1116,15 +1115,16 @@ def OIIINII6584OIplot(numerator1, denominator1, numerator2, denominator2, sizex,
     mean_ratio2 = mvs.meanvalue(data_pos_ratio2, -10)
     std_ratio2 = svs.stdvalue(data_pos_ratio2, mean_ratio2, -10)
 
-    print("log([O III] 5007/Hb)",
-          "%.3f" % mean_ratio1,
-          "sigma",
-          "%.3f" % std_ratio1,
-          "log([N II] 6584/[O I] 6300)",
-          "%.3f" % mean_ratio2,
-          "sigma",
-          "%.3f" % std_ratio2,
-          file=file10)
+    with open('general_output_file.txt', 'a') as f10:
+        print("log([O III] 5007/Hb)",
+              "%.3f" % mean_ratio1,
+              "sigma",
+              "%.3f" % std_ratio1,
+              "log([N II] 6584/[O I] 6300)",
+              "%.3f" % mean_ratio2,
+              "sigma",
+              "%.3f" % std_ratio2,
+              file=f10)
 
     maxper = 75
     minper = 25
@@ -1186,8 +1186,6 @@ def OIIINII6584OIplot(numerator1, denominator1, numerator2, denominator2, sizex,
 
 def OIIIOII732030OIIIplot(numerator1, denominator1, numerator2, denominator2,
                           sizex, sizey):
-    file10 = open('general_output_file.txt', 'a')
-
     data_pos_ratio1 = []
 
     data_ratio1 = lrs.lineratio(numerator1, denominator1, sizex, sizey, 0)
@@ -1206,15 +1204,17 @@ def OIIIOII732030OIIIplot(numerator1, denominator1, numerator2, denominator2,
     mean_ratio2 = mvs.meanvalue(data_pos_ratio2, -10)
     std_ratio2 = svs.stdvalue(data_pos_ratio2, mean_ratio2, -10)
 
-    print("log([O III] 5007/Hb)",
-          "%.3f" % mean_ratio1,
-          "sigma",
-          "%.3f" % std_ratio1,
-          "log([O II] 7320+7330/[O III] 5007)",
-          "%.3f" % mean_ratio2,
-          "sigma",
-          "%.3f" % std_ratio2,
-          file=file10)
+    with open('general_output_file.txt', 'a') as f10:
+
+        print("log([O III] 5007/Hb)",
+              "%.3f" % mean_ratio1,
+              "sigma",
+              "%.3f" % std_ratio1,
+              "log([O II] 7320+7330/[O III] 5007)",
+              "%.3f" % mean_ratio2,
+              "sigma",
+              "%.3f" % std_ratio2,
+              file=f10)
 
     maxper = 75
     minper = 25
@@ -1276,8 +1276,6 @@ def OIIIOII732030OIIIplot(numerator1, denominator1, numerator2, denominator2,
 
 def OIIIOII372729OIIIplot(numerator1, denominator1, numerator2, denominator2,
                           sizex, sizey):
-    file10 = open('general_output_file.txt', 'a')
-
     data_pos_ratio1 = []
 
     data_ratio1 = lrs.lineratio(numerator1, denominator1, sizex, sizey, 0)
@@ -1296,15 +1294,17 @@ def OIIIOII372729OIIIplot(numerator1, denominator1, numerator2, denominator2,
     mean_ratio2 = mvs.meanvalue(data_pos_ratio2, -10)
     std_ratio2 = svs.stdvalue(data_pos_ratio2, mean_ratio2, -10)
 
-    print("log([O III] 5007/Hb)",
-          "%.3f" % mean_ratio1,
-          "sigma",
-          "%.3f" % std_ratio1,
-          "log([O II] 3727+3729/[O III] 5007)",
-          "%.3f" % mean_ratio2,
-          "sigma",
-          "%.3f" % std_ratio2,
-          file=file10)
+    with open('general_output_file.txt', 'a') as f10:
+
+        print("log([O III] 5007/Hb)",
+              "%.3f" % mean_ratio1,
+              "sigma",
+              "%.3f" % std_ratio1,
+              "log([O II] 3727+3729/[O III] 5007)",
+              "%.3f" % mean_ratio2,
+              "sigma",
+              "%.3f" % std_ratio2,
+              file=f10)
 
     maxper = 75
     minper = 25
@@ -1366,7 +1366,6 @@ def OIIIOII372729OIIIplot(numerator1, denominator1, numerator2, denominator2,
 
 def OIIIOII372729Hbplot(numerator1, denominator1, numerator2, denominator2,
                         sizex, sizey):
-    file10 = open('general_output_file.txt', 'a')
 
     data_pos_ratio1 = []
 
@@ -1386,6 +1385,7 @@ def OIIIOII372729Hbplot(numerator1, denominator1, numerator2, denominator2,
     mean_ratio2 = mvs.meanvalue(data_pos_ratio2, -10)
     std_ratio2 = svs.stdvalue(data_pos_ratio2, mean_ratio2, -10)
 
+    file10 = open('general_output_file.txt', 'a')
     print("log([O III] 5007/Hb)",
           "%.3f" % mean_ratio1,
           "sigma",
@@ -1456,7 +1456,6 @@ def OIIIOII372729Hbplot(numerator1, denominator1, numerator2, denominator2,
 
 def OIIIOII732030Haplot(numerator1, denominator1, numerator2, denominator2,
                         sizex, sizey):
-    file10 = open('general_output_file.txt', 'a')
 
     data_pos_ratio1 = []
 
@@ -1476,6 +1475,7 @@ def OIIIOII732030Haplot(numerator1, denominator1, numerator2, denominator2,
     mean_ratio2 = mvs.meanvalue(data_pos_ratio2, -10)
     std_ratio2 = svs.stdvalue(data_pos_ratio2, mean_ratio2, -10)
 
+    file10 = open('general_output_file.txt', 'a')
     print("log([O III] 5007/Hb)",
           "%.3f" % mean_ratio1,
           "sigma",
@@ -1546,7 +1546,6 @@ def OIIIOII732030Haplot(numerator1, denominator1, numerator2, denominator2,
 
 def OIIIHeIplot(numerator1, denominator1, numerator2, denominator2, sizex,
                 sizey):
-    file10 = open('general_output_file.txt', 'a')
 
     data_pos_ratio1 = []
 
@@ -1566,6 +1565,7 @@ def OIIIHeIplot(numerator1, denominator1, numerator2, denominator2, sizex,
     mean_ratio2 = mvs.meanvalue(data_pos_ratio2, -10)
     std_ratio2 = svs.stdvalue(data_pos_ratio2, mean_ratio2, -10)
 
+    file10 = open('general_output_file.txt', 'a')
     print("log([O III] 5007/Hb)",
           "%.3f" % mean_ratio1,
           "sigma",
