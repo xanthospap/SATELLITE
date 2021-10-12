@@ -1,44 +1,45 @@
 import numpy as np
 
+
 class Flux2D:
 
     def __init__(self, sizex=0, sizey=0):
         if sizex or sizey:
-            self.Ha_6563 = np.zeros((sizex,sizey))
-            self.Hb_4861 = np.zeros((sizex,sizey))
-            self.Hg_4340 = np.zeros((sizex,sizey))
-            self.Hd_4101 = np.zeros((sizex,sizey))
-            self.HeIa_5876 = np.zeros((sizex,sizey))
-            self.HeIb_6678 = np.zeros((sizex,sizey))
-            self.HeIIa_4686 = np.zeros((sizex,sizey))
-            self.HeIIb_5412 = np.zeros((sizex,sizey))
-            self.NIIa_5755 = np.zeros((sizex,sizey))
-            self.NIIb_6548 = np.zeros((sizex,sizey))
-            self.NIIc_6584 = np.zeros((sizex,sizey))
-            self.NI_5199 = np.zeros((sizex,sizey))
-            self.OIIIa_4363 = np.zeros((sizex,sizey))
-            self.OIIIb_4959 = np.zeros((sizex,sizey))
-            self.OIIIc_5007 = np.zeros((sizex,sizey))
-            self.OIIa_3727 = np.zeros((sizex,sizey))
-            self.OIIb_3729 = np.zeros((sizex,sizey))
-            self.OIIc_7320 = np.zeros((sizex,sizey))
-            self.OIId_7330 = np.zeros((sizex,sizey))
-            self.OIa_5577 = np.zeros((sizex,sizey))
-            self.OIb_6300 = np.zeros((sizex,sizey))
-            self.OIc_6363 = np.zeros((sizex,sizey))
-            self.SIIa_6716 = np.zeros((sizex,sizey))
-            self.SIIb_6731 = np.zeros((sizex,sizey))
-            self.SIIIa_6312 = np.zeros((sizex,sizey))
-            self.SIIIb_9069 = np.zeros((sizex,sizey))
-            self.ClIIIa_5517 = np.zeros((sizex,sizey))
-            self.ClIIIb_5538 = np.zeros((sizex,sizey))
-            self.ArIII_7136 = np.zeros((sizex,sizey))
-            self.ArIVa_4712 = np.zeros((sizex,sizey))
-            self.ArIVb_4740 = np.zeros((sizex,sizey))
-            self.CI_8727 = np.zeros((sizex,sizey))
-            self.CII_6461 = np.zeros((sizex,sizey))
-            self.NeIIIa_3868 = np.zeros((sizex,sizey))
-            self.NeIIIb_3967 = np.zeros((sizex,sizey))
+            self.Ha_6563 = np.zeros((sizex, sizey))
+            self.Hb_4861 = np.zeros((sizex, sizey))
+            self.Hg_4340 = np.zeros((sizex, sizey))
+            self.Hd_4101 = np.zeros((sizex, sizey))
+            self.HeIa_5876 = np.zeros((sizex, sizey))
+            self.HeIb_6678 = np.zeros((sizex, sizey))
+            self.HeIIa_4686 = np.zeros((sizex, sizey))
+            self.HeIIb_5412 = np.zeros((sizex, sizey))
+            self.NIIa_5755 = np.zeros((sizex, sizey))
+            self.NIIb_6548 = np.zeros((sizex, sizey))
+            self.NIIc_6584 = np.zeros((sizex, sizey))
+            self.NI_5199 = np.zeros((sizex, sizey))
+            self.OIIIa_4363 = np.zeros((sizex, sizey))
+            self.OIIIb_4959 = np.zeros((sizex, sizey))
+            self.OIIIc_5007 = np.zeros((sizex, sizey))
+            self.OIIa_3727 = np.zeros((sizex, sizey))
+            self.OIIb_3729 = np.zeros((sizex, sizey))
+            self.OIIc_7320 = np.zeros((sizex, sizey))
+            self.OIId_7330 = np.zeros((sizex, sizey))
+            self.OIa_5577 = np.zeros((sizex, sizey))
+            self.OIb_6300 = np.zeros((sizex, sizey))
+            self.OIc_6363 = np.zeros((sizex, sizey))
+            self.SIIa_6716 = np.zeros((sizex, sizey))
+            self.SIIb_6731 = np.zeros((sizex, sizey))
+            self.SIIIa_6312 = np.zeros((sizex, sizey))
+            self.SIIIb_9069 = np.zeros((sizex, sizey))
+            self.ClIIIa_5517 = np.zeros((sizex, sizey))
+            self.ClIIIb_5538 = np.zeros((sizex, sizey))
+            self.ArIII_7136 = np.zeros((sizex, sizey))
+            self.ArIVa_4712 = np.zeros((sizex, sizey))
+            self.ArIVb_4740 = np.zeros((sizex, sizey))
+            self.CI_8727 = np.zeros((sizex, sizey))
+            self.CII_6461 = np.zeros((sizex, sizey))
+            self.NeIIIa_3868 = np.zeros((sizex, sizey))
+            self.NeIIIb_3967 = np.zeros((sizex, sizey))
         else:
             self.Ha_6563 = []
             self.Hb_4861 = []
@@ -78,6 +79,7 @@ class Flux2D:
 
 
 class C_TeNe:
+
     def __init__(self):
         self.NIISII = []
         self.OISII = []
@@ -95,6 +97,7 @@ class C_TeNe:
 
 
 class Ion_Abun:
+
     def __init__(self):
         self.HeIa = []
         self.HeIb = []
@@ -128,6 +131,7 @@ class Ion_Abun:
 
 
 class Elem_Abun_KB:
+
     def __init__(self):
         self.He = []
         self.N = []
@@ -139,6 +143,7 @@ class Elem_Abun_KB:
 
 
 class Elem_Abun_KB_Ratio:
+
     def __init__(self):
         self.NO = []
         self.SO = []
@@ -146,7 +151,9 @@ class Elem_Abun_KB_Ratio:
         self.ArO = []
         self.ClO = []
 
+
 class Ratio_Angles:
+
     def __init__(self):
         self.HeIa5876_Ha = []
         self.HeIb6678_Ha = []
