@@ -4,15 +4,13 @@
 # The routine also searches in the current folder if the image is already saved.
 # (C) Stavros Akras
 
-
 import numpy as np
 from astropy.io import fits
 import os, fnmatch
 
-
-
 def save_image(a1,a2,name,parameter,request):
-               
+    if not os.path.isdir('output_images'): os.mkdir('output_images')
+    
     index_req=parameter.index(name)
     if request[index_req]=="yes":
         file_save_exist=0
@@ -34,7 +32,8 @@ def save_image(a1,a2,name,parameter,request):
     return 
 
 def save_image_ionabun(a1,a2,name1,name,parameter,request,line_names,lines_available):
-               
+    if not os.path.isdir('output_images'): os.mkdir('output_images')
+    
     index_req=line_names.index(name1)
     if lines_available[index_req]=="yes":
         file_save_exist=0
@@ -56,7 +55,7 @@ def save_image_ionabun(a1,a2,name1,name,parameter,request,line_names,lines_avail
     return 
 
 def save_image2(a1,a2,name1,name,parameter,request):
-               
+    if not os.path.isdir('output_images'): os.mkdir('output_images')
     index_req=parameter.index(name1)
     if request[index_req]=="yes":
         file_save_exist=0
