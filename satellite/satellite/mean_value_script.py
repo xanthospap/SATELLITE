@@ -5,8 +5,16 @@
 # had been given in the line_ratio_script.py
 # (C) Stavros Akras
 
+from __future__ import print_function
+import numpy as np
 
 def meanvalue(a1, value):
+    return np.mean(np.array([j for j in a1 if j > value]))
+
+def meanvalue2(a1, value_min, value_max):
+    return np.mean(np.array([j for j in a1 if j > value_min and j < value_max]))
+
+def meanvalue__old(a1, value):
     l1 = 0
     sum = 0.0
     for j in range(0, len(a1)):
@@ -21,7 +29,8 @@ def meanvalue(a1, value):
     return sum / l1
 
 
-def meanvalue2(a1, value1, value2):
+
+def meanvalue2__old(a1, value1, value2):
     l1 = 0
     sum = 0.0
     for j in range(0, len(a1)):

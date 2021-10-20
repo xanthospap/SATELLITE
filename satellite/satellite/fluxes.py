@@ -78,78 +78,141 @@ class Flux2D:
             self.NeIIIb_3967 = []
 
 
-class C_TeNe:
+class TeNe:
 
-    def __init__(self):
-        self.NIISII = []
-        self.OISII = []
-        self.OIISII = []
-        self.OIIISII = []
-        self.SIIISII = []
-        self.OIIOII = []
-        self.NIIOII = []
-        self.OIOII = []
-        self.OIIIClIII = []
-        self.SIIIClIII = []
-        self.OIIIArVI = []
-        self.SIIIArVI = []
-        self.NIIClIII = []
+    def __init__(self, sizex=0, sizey=0):
+        if sizex !=0 or sizey !=0:
+            if sizex != 0 and sizey == 0: sizey = sizex
+            self.NIISII = np.zeros((sizex, sizey))
+            self.OISII = np.zeros((sizex, sizey))
+            self.OIISII = np.zeros((sizex, sizey))
+            self.OIIISII = np.zeros((sizex, sizey))
+            self.SIIISII = np.zeros((sizex, sizey))
+            self.OIIOII = np.zeros((sizex, sizey))
+            self.NIIOII = np.zeros((sizex, sizey))
+            self.OIOII = np.zeros((sizex, sizey))
+            self.OIIIClIII = np.zeros((sizex, sizey))
+            self.SIIIClIII = np.zeros((sizex, sizey))
+            self.OIIIArVI = np.zeros((sizex, sizey))
+            self.SIIIArVI = np.zeros((sizex, sizey))
+            self.NIIClIII = np.zeros((sizex, sizey))
+        else:
+            self.NIISII = []
+            self.OISII = []
+            self.OIISII = []
+            self.OIIISII = []
+            self.SIIISII = []
+            self.OIIOII = []
+            self.NIIOII = []
+            self.OIOII = []
+            self.OIIIClIII = []
+            self.SIIIClIII = []
+            self.OIIIArVI = []
+            self.SIIIArVI = []
+            self.NIIClIII = []
 
 
 class Ion_Abun:
 
-    def __init__(self):
-        self.HeIa = []
-        self.HeIb = []
-        self.HeIIa = []
-        self.HeIIb = []
-        self.NI = []
-        self.NIIa = []
-        self.NIIb = []
-        self.NIIc = []
-        self.OIa = []
-        self.OIb = []
-        self.OIc = []
-        self.OIIa = []
-        self.OIIb = []
-        self.OIIc = []
-        self.OIId = []
-        self.OIIIa = []
-        self.OIIIb = []
-        self.OIIIc = []
-        self.SIIa = []
-        self.SIIb = []
-        self.SIIIa = []
-        self.SIIIb = []
-        self.NeIIIa = []
-        self.NeIIIb = []
-        self.ArIII = []
-        self.ArIVa = []
-        self.ArIVb = []
-        self.ClIIIa = []
-        self.ClIIIb = []
+    def __init__(self, sizex=0, sizey=0):
+        if sizex == 0 and sizey == 0:
+            self.HeIa = []
+            self.HeIb = []
+            self.HeIIa = []
+            self.HeIIb = []
+            self.NI = []
+            self.NIIa = []
+            self.NIIb = []
+            self.NIIc = []
+            self.OIa = []
+            self.OIb = []
+            self.OIc = []
+            self.OIIa = []
+            self.OIIb = []
+            self.OIIc = []
+            self.OIId = []
+            self.OIIIa = []
+            self.OIIIb = []
+            self.OIIIc = []
+            self.SIIa = []
+            self.SIIb = []
+            self.SIIIa = []
+            self.SIIIb = []
+            self.NeIIIa = []
+            self.NeIIIb = []
+            self.ArIII = []
+            self.ArIVa = []
+            self.ArIVb = []
+            self.ClIIIa = []
+            self.ClIIIb = []
+        else:
+            self.HeIa = np.zeros((sizex, sizey))
+            self.HeIb = np.zeros((sizex, sizey))
+            self.HeIIa = np.zeros((sizex, sizey))
+            self.HeIIb = np.zeros((sizex, sizey))
+            self.NI = np.zeros((sizex, sizey))
+            self.NIIa = np.zeros((sizex, sizey))
+            self.NIIb = np.zeros((sizex, sizey))
+            self.NIIc = np.zeros((sizex, sizey))
+            self.OIa = np.zeros((sizex, sizey))
+            self.OIb = np.zeros((sizex, sizey))
+            self.OIc = np.zeros((sizex, sizey))
+            self.OIIa = np.zeros((sizex, sizey))
+            self.OIIb = np.zeros((sizex, sizey))
+            self.OIIc = np.zeros((sizex, sizey))
+            self.OIId = np.zeros((sizex, sizey))
+            self.OIIIa = np.zeros((sizex, sizey))
+            self.OIIIb = np.zeros((sizex, sizey))
+            self.OIIIc = np.zeros((sizex, sizey))
+            self.SIIa = np.zeros((sizex, sizey))
+            self.SIIb = np.zeros((sizex, sizey))
+            self.SIIIa = np.zeros((sizex, sizey))
+            self.SIIIb = np.zeros((sizex, sizey))
+            self.NeIIIa = np.zeros((sizex, sizey))
+            self.NeIIIb = np.zeros((sizex, sizey))
+            self.ArIII = np.zeros((sizex, sizey))
+            self.ArIVa = np.zeros((sizex, sizey))
+            self.ArIVb = np.zeros((sizex, sizey))
+            self.ClIIIa = np.zeros((sizex, sizey))
+            self.ClIIIb = np.zeros((sizex, sizey))
 
 
 class Elem_Abun_KB:
 
-    def __init__(self):
-        self.He = []
-        self.N = []
-        self.O = []
-        self.S = []
-        self.Ne = []
-        self.Ar = []
-        self.Cl = []
+    def __init__(self, sizex=0, sizey=0):
+        if sizex == 0 and sizey == 0:
+            self.He = []
+            self.N = []
+            self.O = []
+            self.S = []
+            self.Ne = []
+            self.Ar = []
+            self.Cl = []
+        else:
+            self.He = np.zeros((sizex, sizey))
+            self.N = np.zeros((sizex, sizey))
+            self.O = np.zeros((sizex, sizey))
+            self.S = np.zeros((sizex, sizey))
+            self.Ne = np.zeros((sizex, sizey))
+            self.Ar = np.zeros((sizex, sizey))
+            self.Cl = np.zeros((sizex, sizey))
 
 
 class Elem_Abun_KB_Ratio:
 
-    def __init__(self):
-        self.NO = []
-        self.SO = []
-        self.NeO = []
-        self.ArO = []
-        self.ClO = []
+    def __init__(self, sizex=0, sizey=0):
+        if sizex == 0 and sizey == 0:
+            self.NO = []
+            self.SO = []
+            self.NeO = []
+            self.ArO = []
+            self.ClO = []
+        else:
+            self.NO = np.zeros((sizex, sizey))
+            self.SO = np.zeros((sizex, sizey))
+            self.NeO = np.zeros((sizex, sizey))
+            self.ArO = np.zeros((sizex, sizey))
+            self.ClO = np.zeros((sizex, sizey))
 
 
 class Ratio_Angles:

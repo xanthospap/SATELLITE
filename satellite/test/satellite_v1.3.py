@@ -234,8 +234,7 @@ if param_requered[index] == "yes":
     if param_requered[index] == "no":
         flux_spec_slit_norm, flux_spec_slit_norm_error = fands.flux_ang_norm_definition_specificslits(
             param_mod_name, param_model_values)
-        Te_slits, Ne_slits = dTeNenullspaxelss.nullTeNe_specific_slits(
-            param_mod_name, param_model_values)
+        Te_slits, Ne_slits = dTeNenullspaxelss.nullTeNe_specific_slits()
 
     a2Ds.analysis2D(flux, flux_error, flux_angles_norm, angles, line_names,
                     line_ext_error, lines_available, lines_radial,
