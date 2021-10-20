@@ -28,8 +28,6 @@ def meanvalue__old(a1, value):
 
     return sum / l1
 
-
-
 def meanvalue2__old(a1, value1, value2):
     l1 = 0
     sum = 0.0

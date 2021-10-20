@@ -7,9 +7,6 @@ from satellite import TeNe_angles_script as TeNeangles
 from satellite import TeNe_specific_slits_script as TeNeslits
 from satellite import TeNe_2D_script as TeNe2Ds
 
-global file10
-
-
 def analysiswithPyNeb(flux2D, flux2D_error, flux_angles, flux_angles_error,
                       flux_spec_slit, flux_spec_slit_error, ang, line_names,
                       lines_available, lines_radial, param_estimated,

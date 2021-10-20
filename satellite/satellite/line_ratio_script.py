@@ -13,6 +13,7 @@ import numpy as np
 
 
 def lineratio(nom1, dom1, sx, sy, idex):
+    print(">> called lineratio with arguments: nom1={:}, dom1={:}, sx={:}, sy={:}, idex={:}".format(nom1, dom1, sx, sy, idex))
     a3 = np.zeros((sy, sx))
 
     for j in range(0, sx):

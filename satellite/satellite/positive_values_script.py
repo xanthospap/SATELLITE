@@ -4,8 +4,10 @@
 # and save the values in an 1D array, otherwise put a value of -1000000
 # (C) Stavros Akras
 
+from __future__ import print_function
 
 def positivevalues(a1, nom1, dom1, sx, sy, idex):
+    print(">> called positivevalues with arguments: a1={:}, nom1={:}, dom1={:}, sx={:}, sy={:}, idex={:}".format(a1, nom1, dom1, sx, sy, idex))
     l1 = 0
     datapos = []
     for j in range(0, sx):
