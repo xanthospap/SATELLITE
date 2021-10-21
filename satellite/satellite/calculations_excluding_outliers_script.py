@@ -59,6 +59,13 @@ def estimates_without_outliers(a1, a2, sx, sy):
 
 def estimates_without_outliers1D(a1, number):
     print(">> called estimates_without_outliers1D with params a1={:}, number={:}, len(a1)={:}".format(a1,number,len(a1)))
+    if len(a1) != number:
+      print('WARNING estimates_without_outliers1D called and the a1 list size does not match number parameter!')
+
+    
+    if a1 == []:
+      print('WARNING empty a1 list provided to estimates_without_outliers1D')
+      return 0, 0
 
     ##################################################################
     ### The parameters minn and maxx correspond to the percentile in %

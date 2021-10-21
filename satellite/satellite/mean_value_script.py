@@ -9,10 +9,13 @@ from __future__ import print_function
 import numpy as np
 
 def meanvalue(a1, value):
-    return np.mean(np.array([j for j in a1 if j > value]))
+    ## filter values which are larger than value
+    l = [j for j in a1 if j > value]
+    return np.mean(np.array(l))
 
 def meanvalue2(a1, value_min, value_max):
-    return np.mean(np.array([j for j in a1 if j > value_min and j < value_max]))
+    l = [j for j in a1 if j > value_min and j < value_max]
+    return np.mean(np.array(l))
 
 def meanvalue__old(a1, value):
     l1 = 0

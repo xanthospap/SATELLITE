@@ -24,13 +24,13 @@ def TeNe(flux_angles, flux_angles_error, ang, line_names, lines_available,
          param_estimated, param_requered, param_mod_name, param_model_values,
          par_plotname, par_plotymin, par_plotymax):
 
-    Te = flx.C_TeNe()
-    Te_error = flx.C_TeNe()
-    Te_fake = flx.C_TeNe()
+    Te = flx.TeNe()
+    Te_error = flx.TeNe()
+    Te_fake = flx.TeNe()
 
-    Ne = flx.C_TeNe()
-    Ne_error = flx.C_TeNe()
-    Ne_fake = flx.C_TeNe()
+    Ne = flx.TeNe()
+    Ne_error = flx.TeNe()
+    Ne_fake = flx.TeNe()
 
     ion_abun = flx.Ion_Abun()
     ion_abun_error = flx.Ion_Abun()
