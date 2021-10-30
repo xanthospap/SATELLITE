@@ -110,7 +110,11 @@ class TeNe:
             self.OIIIArVI = []
             self.SIIIArVI = []
             self.NIIClIII = []
-
+    
+    def append(self, value, times):
+        lst = [value] * times
+        for atr in [self.NIISII, self.OISII, self.OIISII, self.OIIISII, self.SIIISII, self.OIIOII, self.NIIOII, self.OIOII, self.OIIIClIII, self.SIIIClIII, self.OIIIArVI, self.SIIIArVI, self.NIIClIII] :
+          atr += lst
 
 class Ion_Abun:
 

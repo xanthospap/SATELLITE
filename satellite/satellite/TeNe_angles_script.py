@@ -635,7 +635,7 @@ def TeNe(flux_angles, flux_angles_error, ang, line_names, lines_available,
             name_ext = str('No') + ' ' + str('correction')
         RV_ext = float(param_model_values[index_extlaw]) * 0.1
 
-        pn.log_.level = 3  # set this to 3 to have more details
+        pn.log_.level = -5  # set this to 3 to have more details
         # Adopt an extinction law
         extinction_law = name_ext
 

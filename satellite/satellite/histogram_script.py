@@ -6,6 +6,7 @@
 from __future__ import print_function
 
 import numpy as np
+import os
 import matplotlib.pyplot as plt
 
 from scipy.stats import norm
@@ -17,6 +18,8 @@ from satellite import mean_value_script as mvs
 def histogram_plots(data, data_err, name, line_names, lines_available,
                     param_mod_name, param_model_values, param_estimated,
                     param_requered):
+    if not os.path.isdir('output_plots'): os.mkdir('output_plots')
+
     index_size = param_mod_name.index("total_num_pixels_horiz")
     sizex = param_model_values[index_size]
     sizey = param_model_values[index_size]
@@ -223,6 +226,8 @@ def histogram_plots(data, data_err, name, line_names, lines_available,
 
 def histogram_plots2(data, name, line_names, lines_available, param_mod_name,
                      param_model_values, param_estimated, param_requered):
+    if not os.path.isdir('output_plots'): os.mkdir('output_plots')
+    
     index_size = param_mod_name.index("total_num_pixels_horiz")
     sizex = param_model_values[index_size]
     sizey = param_model_values[index_size]

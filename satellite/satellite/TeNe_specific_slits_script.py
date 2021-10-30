@@ -17,6 +17,74 @@ from satellite import element_abundances_ICFs_specific_slits_script as eaIsss
 from satellite import norm_flux_error_script as nfes
 from satellite import fluxes as flx
 
+dct = {"H1r_6563A": 'Ha_6563',
+       "H1r_4861A": 'Hb_4861',
+       "H1r_4341A":
+       'Hg_4340',
+       "H1r_4102A":
+       'Hd_4101',
+       "He2r_4686A":
+       'HeIIa_4686',
+       "He2r_5411A":
+       'HeIIb_5412',
+       "He1r_5876A":
+       'HeIa_5876',
+       "He1r_6678A":
+       'HeIb_6678',
+       "S2_6716A":
+       'SIIa_6716',
+       "S2_6731A":
+       'SIIb_6731',
+       "S3_6312A":
+       'SIIIa_6312',
+       "S3_9069A":
+       'SIIIb_9069',
+       "N1_5200A":
+       'NI_5199',
+       "N2_5755A":
+       'NIIa_5755',
+       "N2_6548A":
+       'NIIb_6548',
+       "N2_6584A":
+       'NIIc_6584',
+       "O1_5577A":
+       'OIa_5577',
+       "O1_6300A":
+       'OIb_6300',
+       "O1_6364A":
+       'OIc_6363',
+       "O2_3726A":
+       'OIIa_3727',
+       "O2_3729A":
+       'OIIb_3729',
+       "O2_7319A+":
+       'OIIc_7320',
+       "O2_7330A+":
+       'OIId_7330',
+       "O3_4363A":
+       'OIIIa_4363',
+       "O3_4959A":
+       'OIIIb_4959',
+       "O3_5007A":
+       'OIIIc_5007',
+       "Cl3_5518A":
+       'ClIIIa_5517',
+       "Cl3_5538A":
+       'ClIIIb_5538',
+       "Ne3_3869A":
+       'NeIIIa_3868',
+       "Ne3_3968A":
+       'NeIIIb_3967',
+       "Ar3_7136A":
+       'ArIII_7136',
+       "Ar4_4711A":
+       'ArIVa_4712',
+       "Ar4_4740A":
+       'ArIVb_4740',
+       "C1_8728A":
+       'CI_8727'
+       }
+
 
 def TeNe(flux_angles, flux_angles_error, line_names, lines_available,
          param_estimated, param_requered, param_mod_name, param_model_values):
@@ -167,44 +235,12 @@ def TeNe(flux_angles, flux_angles_error, line_names, lines_available,
           "Ne_ClIII",
           file=file4)
 
-    for i in range(0, 10):
-        Te.NIISII.append(0), Ne.NIISII.append(0), Te.OISII.append(
-            0), Ne.OISII.append(0), Te.OIISII.append(0), Ne.OIISII.append(
-                0
-            ), Te.OIIISII.append(0), Ne.OIIISII.append(0), Te.SIIISII.append(
-                0), Ne.SIIISII.append(0), Te.OIIOII.append(0), Ne.OIIOII.append(
-                    0
-                ), Te.NIIOII.append(0), Ne.NIIOII.append(0), Te.OIOII.append(
-                    0), Ne.OIOII.append(0), Te.OIIIClIII.append(
-                        0), Ne.OIIIClIII.append(0), Te.SIIIClIII.append(
-                            0), Ne.SIIIClIII.append(0), Te.OIIIArVI.append(
-                                0), Ne.OIIIArVI.append(0), Te.SIIIArVI.append(
-                                    0), Ne.SIIIArVI.append(
-                                        0), Te.NIIClIII.append(
-                                            0), Ne.NIIClIII.append(0)
+    for i in range(10):
+        Te.append(0, 1)
+        Ne.append(0, 1)
+        Te_error.append(0, 1)
+        Ne_error.append(0, 1)
 
-        Te_error.NIISII.append(0), Ne_error.NIISII.append(
-            0), Te_error.OISII.append(0), Ne_error.OISII.append(
-                0), Te_error.OIISII.append(0), Ne_error.OIISII.append(
-                    0), Te_error.OIIISII.append(0), Ne_error.OIIISII.append(
-                        0
-                    ), Te_error.SIIISII.append(0), Ne_error.SIIISII.append(
-                        0
-                    ), Te_error.OIIOII.append(0), Ne_error.OIIOII.append(
-                        0
-                    ), Te_error.NIIOII.append(0), Ne_error.NIIOII.append(
-                        0
-                    ), Te_error.OIOII.append(0), Ne_error.OIOII.append(
-                        0
-                    ), Te_error.OIIIClIII.append(0), Ne_error.OIIIClIII.append(
-                        0
-                    ), Te_error.SIIIClIII.append(0), Ne_error.SIIIClIII.append(
-                        0), Te_error.OIIIArVI.append(
-                            0), Ne_error.OIIIArVI.append(
-                                0), Te_error.SIIIArVI.append(
-                                    0), Ne_error.SIIIArVI.append(
-                                        0), Te_error.NIIClIII.append(
-                                            0), Ne_error.NIIClIII.append(0)
 
         print("######################################",
               " specific slit number ",
@@ -225,380 +261,19 @@ def TeNe(flux_angles, flux_angles_error, line_names, lines_available,
         file3 = open('test.dat', 'w')
         print("LINE test err", file=file3)
 
-        error = nfes.flux_Error(flux_angles.Ha_6563[i],
-                                flux_angles_error.Ha_6563[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("H1r_6563A",
-              '{:03.3f}'.format(flux_angles.Ha_6563[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "H1r_6563Ae", '{:03.3f}'.format(error)
+        def foo(element):
+            print(">> calling foo with key={:}, value={:}".format(element, dct[element]))
+            error = nfes.flux_Error(getattr(flux_angles, dct[element])[i],
+                getattr(flux_angles_error, dct[element])[i],
+                flux_angles.Hb_4861[i], flux_angles_error.Hb_4861[i])
 
-        error = nfes.flux_Error(flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("H1r_4861A",
-              '{:03.3f}'.format(flux_angles.Hb_4861[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "H1r_4861Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.Hg_4340[i],
-                                flux_angles_error.Hg_4340[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("H1r_4341A",
-              '{:03.3f}'.format(flux_angles.Hg_4340[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "H1r_4341Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.Hd_4101[i],
-                                flux_angles_error.Hd_4101[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("H1r_4102A",
-              '{:03.3f}'.format(flux_angles.Hd_4101[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "H1r_4102Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.HeIIa_4686[i],
-                                flux_angles_error.HeIIa_4686[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("He2r_4686A",
-              '{:03.3f}'.format(flux_angles.HeIIa_4686[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "He2r_4686Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.HeIIb_5412[i],
-                                flux_angles_error.HeIIb_5412[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("He2r_5411A",
-              '{:03.3f}'.format(flux_angles.HeIIb_5412[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "He2r_5411Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.HeIa_5876[i],
-                                flux_angles_error.HeIa_5876[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("He1r_5876A",
-              '{:03.3f}'.format(flux_angles.HeIa_5876[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "He1r_5876Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.HeIb_6678[i],
-                                flux_angles_error.HeIb_6678[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("He1r_6678A",
-              '{:03.3f}'.format(flux_angles.HeIb_6678[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "He1r_6678Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.SIIa_6716[i],
-                                flux_angles_error.SIIa_6716[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("S2_6716A",
-              '{:03.3f}'.format(flux_angles.SIIa_6716[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "S2_6716Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.SIIb_6731[i],
-                                flux_angles_error.SIIb_6731[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("S2_6731A",
-              '{:03.3f}'.format(flux_angles.SIIb_6731[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "S2_6731Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.SIIIa_6312[i],
-                                flux_angles_error.SIIIa_6312[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("S3_6312A",
-              '{:03.3f}'.format(flux_angles.SIIIa_6312[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "S3_6312Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.SIIIb_9069[i],
-                                flux_angles_error.SIIIb_9069[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("S3_9069A",
-              '{:03.3f}'.format(flux_angles.SIIIb_9069[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "S3_9069Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.NI_5199[i],
-                                flux_angles_error.NI_5199[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("N1_5200A",
-              '{:03.3f}'.format(flux_angles.NI_5199[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "N1_5200Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.NIIa_5755[i],
-                                flux_angles_error.NIIa_5755[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("N2_5755A",
-              '{:03.3f}'.format(flux_angles.NIIa_5755[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "N2_5755Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.NIIb_6548[i],
-                                flux_angles_error.NIIb_6548[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("N2_6548A",
-              '{:03.3f}'.format(flux_angles.NIIb_6548[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "N2_6548Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.NIIc_6584[i],
-                                flux_angles_error.NIIc_6584[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("N2_6584A",
-              '{:03.3f}'.format(flux_angles.NIIc_6584[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "N2_6584Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.OIa_5577[i],
-                                flux_angles_error.OIa_5577[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("O1_5577A",
-              '{:03.3f}'.format(flux_angles.OIa_5577[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "O1_5577Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.OIb_6300[i],
-                                flux_angles_error.OIb_6300[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("O1_6300A",
-              '{:03.3f}'.format(flux_angles.OIb_6300[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "O1_6300Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.OIc_6363[i],
-                                flux_angles_error.OIc_6363[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("O1_6364A",
-              '{:03.3f}'.format(flux_angles.OIc_6363[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "O1_6364Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.OIIa_3727[i],
-                                flux_angles_error.OIIa_3727[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("O2_3726A",
-              '{:03.3f}'.format(flux_angles.OIIa_3727[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "O2_3726Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.OIIb_3729[i],
-                                flux_angles_error.OIIb_3729[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("O2_3729A",
-              '{:03.3f}'.format(flux_angles.OIIb_3729[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "O2_3729Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.OIIc_7320[i],
-                                flux_angles_error.OIIc_7320[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("O2_7319A+",
-              '{:03.3f}'.format(flux_angles.OIIc_7320[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "O2_7319A+e", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.OIId_7330[i],
-                                flux_angles_error.OIId_7330[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("O2_7330A+",
-              '{:03.3f}'.format(flux_angles.OIId_7330[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "O2_7330A+e", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.OIIIa_4363[i],
-                                flux_angles_error.OIIIa_4363[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("O3_4363A",
-              '{:03.3f}'.format(flux_angles.OIIIa_4363[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "O3_4363Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.OIIIb_4959[i],
-                                flux_angles_error.OIIIb_4959[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("O3_4959A",
-              '{:03.3f}'.format(flux_angles.OIIIb_4959[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "O3_4959Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.OIIIc_5007[i],
-                                flux_angles_error.OIIIc_5007[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("O3_5007A",
-              '{:03.3f}'.format(flux_angles.OIIIc_5007[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "O3_5007Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.ClIIIa_5517[i],
-                                flux_angles_error.ClIIIa_5517[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("Cl3_5518A",
-              '{:03.3f}'.format(flux_angles.ClIIIa_5517[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "Cl3_5518Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.ClIIIb_5538[i],
-                                flux_angles_error.ClIIIb_5538[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("Cl3_5538A",
-              '{:03.3f}'.format(flux_angles.ClIIIb_5538[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "Cl3_5538Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.NeIIIa_3868[i],
-                                flux_angles_error.NeIIIa_3868[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("Ne3_3869A",
-              '{:03.3f}'.format(flux_angles.NeIIIa_3868[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "Ne3_3869Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.NeIIIb_3967[i],
-                                flux_angles_error.NeIIIb_3967[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("Ne3_3968A",
-              '{:03.3f}'.format(flux_angles.NeIIIb_3967[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "Ne3_3968Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.ArIII_7136[i],
-                                flux_angles_error.ArIII_7136[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("Ar3_7136A",
-              '{:03.3f}'.format(flux_angles.ArIII_7136[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "Ar3_7136Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.ArIVa_4712[i],
-                                flux_angles_error.ArIVa_4712[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("Ar4_4711A",
-              '{:03.3f}'.format(flux_angles.ArIVa_4712[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "Ar4_4711Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.ArIVb_4740[i],
-                                flux_angles_error.ArIVb_4740[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("Ar4_4740A",
-              '{:03.3f}'.format(flux_angles.ArIVb_4740[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "Ar4_4740Ae", '{:03.3f}'.format(error)
-
-        error = nfes.flux_Error(flux_angles.CI_8727[i],
-                                flux_angles_error.CI_8727[i],
-                                flux_angles.Hb_4861[i],
-                                flux_angles_error.Hb_4861[i])
-        print("C1_8728A",
-              '{:03.3f}'.format(flux_angles.CI_8727[i] * 100 /
-                                flux_angles.Hb_4861[i]),
-              '{:03.3f}'.format(error),
-              file=file3)
-        #        print >>file3, "C1_8728Ae", '{:03.3f}'.format(error)
-        #        print >>file3, "C2_????A", '{:03.3f}'.format(flux_angles.CII_6461[i]*100/flux_angles.Hb_4861[i])
+            print('{:} {:03.3f} {:03.3f}'.format(
+                element,
+                getattr(flux_angles, dct[element])[i] * 100 / flux_angles.Hb_4861[i],
+                error),
+                file=file3)
+        
+        for elmnt in dct: foo(elmnt)
 
         file3.close()
 
@@ -606,30 +281,30 @@ def TeNe(flux_angles, flux_angles_error, line_names, lines_available,
         name_ext = str(param_mod_name[index_extlaw])
         if name_ext == 'CCM89':
             name_ext = str('CCM89')
-        if name_ext == 'K76':
+        elif name_ext == 'K76':
             name_ext = str('K76')
-        if name_ext == 'F99':
+        elif name_ext == 'F99':
             name_ext = str('F99')
-        if name_ext == 'S79_H83_CCM89':
+        elif name_ext == 'S79_H83_CCM89':
             name_ext = str('S79') + ' ' + str('H83') + ' ' + str('CCM89')
-        if name_ext == 'CCM89_Bal07':
+        elif name_ext == 'CCM89_Bal07':
             name_ext = str('CCM89') + ' ' + str('Bal07')
-        if name_ext == 'CCM89_oD94':
+        elif name_ext == 'CCM89_oD94':
             name_ext = str('CCM89') + ' ' + str('oD94')
-        if name_ext == 'SM79_Gal':
+        elif name_ext == 'SM79_Gal':
             name_ext = str('SM79') + ' ' + str('Gal')
-        if name_ext == 'G03_LMC':
+        elif name_ext == 'G03_LMC':
             name_ext = str('G03') + ' ' + str('LMC')
-        if name_ext == 'MCC99_FM90_LMC':
+        elif name_ext == 'MCC99_FM90_LMC':
             name_ext = str('MCC99') + ' ' + str('FM90') + ' ' + str('LMC')
         #if name_ext=='F99_like': name_ext=str('F99') + ' ' + str('-') + ' ' + str('like')
-        if name_ext == 'F88_F99_LMC':
+        elif name_ext == 'F88_F99_LMC':
             name_ext = str('F88') + ' ' + str('F99') + ' ' + str('LMC')
-        if name_ext == 'No_correction':
+        elif name_ext == 'No_correction':
             name_ext = str('No') + ' ' + str('correction')
         RV_ext = float(param_model_values[index_extlaw]) * 0.1
 
-        pn.log_.level = 3  # set this to 3 to have more details
+        pn.log_.level = -5  # set this to 3 to have more details
         # Adopt an extinction law
         extinction_law = name_ext
 

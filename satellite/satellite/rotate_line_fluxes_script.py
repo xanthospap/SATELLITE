@@ -19,6 +19,7 @@ from satellite import print_results_script as prs
 from satellite import norm_flux_error_script as nfes
 from satellite import fluxes as flx
 
+pn.log_.level = -5  # set this to 3 to have more details
 
 def rotate_line_fluxes(flux2D, flux2D_error, line_names, line_ext_error,
                        lines_available, param_estimated, param_requered,
@@ -1324,7 +1325,6 @@ def rotate_line_fluxes(flux2D, flux2D_error, line_names, line_ext_error,
                 name_ext = str('No') + ' ' + str('correction')
             RV_ext = float(param_model_values[index_extlaw]) * 0.1
 
-            pn.log_.level = 3  # set this to 3 to have more details
             # Adopt an extinction law
             extinction_law = name_ext
 

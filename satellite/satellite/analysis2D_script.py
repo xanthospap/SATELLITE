@@ -17,6 +17,7 @@ from satellite import calculations_excluding_outliers_script as ceos
 from satellite import norm_flux_error_script as nfes
 from satellite import fluxes as flx
 
+pn.log_.level = -5  # set this to 3 to have more details
 
 def analysis2D(flux2D, flux2D_error, flux_angles_norm, ang, line_names,
                line_ext_error, lines_available, lines_radial, param_estimated,
@@ -822,7 +823,6 @@ def analysis2D(flux2D, flux2D_error, flux_angles_norm, ang, line_names,
                     name_ext = str('No') + ' ' + str('correction')
                 RV_ext = float(param_model_values[index_extlaw]) * 0.1
 
-                pn.log_.level = 3  # set this to 3 to have more details
                 # Adopt an extinction law
                 extinction_law = name_ext
 

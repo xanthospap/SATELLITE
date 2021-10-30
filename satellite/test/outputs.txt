@@ -1,6 +1,6 @@
 angular_analysis_task                            yes
 radial_analysis_task                             no
-2D_anaysis_task                                  no
+2D_anaysis_task                                  yes
 specific_slits_analysis_task                     yes
 My_2D_anaysis_task                               no
 My_physical_parameters_task                      no

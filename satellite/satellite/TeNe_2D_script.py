@@ -21,6 +21,8 @@ from satellite import statistics_calculations_script as scs
 from satellite import mean_value_script as meanvs
 from satellite import fluxes as flx
 
+pn.log_.level = -5  # set this to 3 to have more details
+
 def TeNe(flux2D, flux2D_error, line_names, line_ext_error, lines_available,
          param_mod_name, param_model_values, param_estimated, param_requered,
          hdr, Te_PA, Ne_PA):
@@ -852,7 +854,6 @@ def TeNe(flux2D, flux2D_error, line_names, line_ext_error, lines_available,
                     name_ext = str('No') + ' ' + str('correction')
                 RV_ext = float(param_model_values[index_extlaw]) * 0.1
 
-                pn.log_.level = 3  # set this to 3 to have more details
                 # Adopt an extinction law
                 extinction_law = name_ext
 
