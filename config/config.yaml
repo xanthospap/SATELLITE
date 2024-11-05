@@ -1,0 +1,55 @@
+geometry:
+  add_pixels_above: 35
+  add_pixels_below: 35
+  add_pixels_left: 4
+  add_pixels_right: 4
+data_list:
+  prefix: /home/xanthos/Software/Satellite/data
+  suffix: fit
+  element_list:
+    - atom: H
+      spectrum: 
+        i:
+          atomic_list: 
+            - 6563
+            - 4861 
+            - 4340 
+            - 4101
+    - atom: He
+      spectrum: 
+        i:
+          atomic_list: 
+          - 5876
+          - 6678
+        ii:
+          atomic_list: 
+            - 5412
+            - 4686
+    - atom: N
+      spectrum: 
+        i:
+          atomic_list: 
+            - 5199
+        ii:
+          atomic_list: 
+            - 5755
+            - 6548
+            - 6583
+    - atom: O
+      spectrum: 
+        i:
+          atomic_list: 
+            - 5577
+            - 6300
+            - 6363
+        ii:
+          atomic_list: 
+            - 3727
+            - 3729
+            - 7320
+            - 7330
+        iii:
+          atomic_list: 
+            - 4363
+            - 4959
+            - 5007

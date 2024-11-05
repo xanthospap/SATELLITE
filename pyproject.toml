@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "satellite"
+#version = "0.0.1"
+dynamic = [
+  "version",
+]
+authors = [
+  { name="Example Author", email="author@example.com" },
+]
+description = "A small example package"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+  'matplotlib',
+  'numpy',
+  'astropy',
+  'scipy',
+#  'PyNeb'
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src/satellite/*.py",
+]
+exclude = [
+  "*.json",
+  "data/*",
+]
+
+[project.urls]
+Homepage = "https://github.com/pypa/sampleproject"
+Issues = "https://github.com/pypa/sampleproject/issues"
+
+[tool.hatch.version]
+path = "src/satellite/version.py"
