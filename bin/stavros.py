@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #from satellite import cfgio as io
-import satellite as sat
+from satellite import version
 import argparse
 
 satellite_version = '2.r1'
@@ -43,5 +43,5 @@ if __name__ == "__main__":
 # verbose print
     verboseprint = print if args.verbose else lambda *a, **k: None
     
-    verboseprint('Satellite (module) version: {:}'.format(sat.version.version))
+    verboseprint('Satellite (module) version: {:}'.format(version.satellite_version()))
     verboseprint('Satellite (binary) version: {:}'.format(satellite_version))
