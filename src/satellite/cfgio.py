@@ -43,8 +43,8 @@ def configFitsFileList(dct: dict):
     for element in dct['data_list']['element_list']: 
         for spec in element['spectrum']: 
             for atomic in element['spectrum'][spec]['atomic_list']:
-                fn = element['atom'] + spec + '_' + str(atomic) + '.' + d['data_list']['suffix']
-                fns.append({'element': element['atom'], 'spectrum': spec, 'atomic': atomic, 'fn': os.path.join(d['data_list']['prefix'], fn)})
+                fn = element['atom'] + spec + '_' + str(atomic) + '.' + dct['data_list']['suffix']
+                fns.append({'element': element['atom'], 'spectrum': spec, 'atomic': atomic, 'fn': os.path.join(dct['data_list']['prefix'], fn)})
     return fns
     
 if __name__ == "__main__" :

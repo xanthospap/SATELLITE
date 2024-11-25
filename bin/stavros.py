@@ -2,6 +2,7 @@
 
 #from satellite import cfgio as io
 from satellite import version
+from satellite import cfgio
 import argparse
 
 satellite_version = '2.r1'
@@ -30,6 +31,15 @@ parser.add_argument(
     help='Configuration file for analysis.')
 
 parser.add_argument(
+    '-a',
+    '--atomic-data-set',
+    metavar='ATOMIC_DATA_SET',
+    dest='pn_atomics',
+    default='PYNEB_21_01',
+    required=False,
+    help='Predefined atomic data set provided by PyNeb. For a complete list, see https://github.com/Morisset/PyNeb_devel/blob/master/docs/Notebooks/PyNeb_manual_3.ipynb')
+
+parser.add_argument(
     '--verbose',
     action='store_true',
     dest='verbose',
@@ -45,3 +55,14 @@ if __name__ == "__main__":
     
     verboseprint('Satellite (module) version: {:}'.format(version.satellite_version()))
     verboseprint('Satellite (binary) version: {:}'.format(satellite_version))
+
+# parse the config file
+    config = cfgio.parseConfigInout(args.config)
+
+# get the FITS file list, with corresponding elements
+    fits_info = cfgio.configFitsFileList(config)
+    for idx, fits in enumerate(fits_info): 
+        processFits( fits['fn'] ) #TODO
+        fits[idx]['values'] = # TODO
+
+# ion abundances
