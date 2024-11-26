@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 
-#from satellite import cfgio as io
 from satellite import version
 from satellite import cfgio
+from satellite import roman
+from satellite import specific_slit
+
 import argparse
+import os
+import sys
 
 satellite_version = '2.r1'
 
@@ -45,6 +49,37 @@ parser.add_argument(
     dest='verbose',
     help='Verbose mode on')
 
+
+def checkInputFits(fits_info: dict):
+    missing_files = []
+    for idx, fits in enumerate(fits_info):
+        file_is_missing = False
+        fitsfn = fits['fn']
+        if not os.path.isfile(fitsfn):
+            print("[WRNNG] Missing Fits file {:}".format(fitsfn), file=sys.stderr)
+            bn = os.path.basename(fitsfn)
+            file_is_missing = True
+# find spectrum in filename
+            sstr = fits['spectrum']
+# replace roman spectrum with int and see if file exists
+            if bn.find(sstr) >= 0:
+                gfn = bn.replace(sstr, str(roman.roman2int(sstr)), 1)
+                guess = os.path.join(os.path.dirname(fitsfn), gfn)
+                if os.path.isfile(guess):
+# change the name in the return list
+                    print("[DEBUG] Fits filename {:} is missing; using {:}".format(os.path.basename(fitsfn), gfn), file=sys.stderr)
+                    fits_info[idx]['fn'] = guess
+                    file_is_missing = False
+            if file_is_missing and bn.find(sstr) >= 0:
+                gfn = bn.replace(sstr, sstr.upper(), 1)
+                guess = os.path.join(os.path.dirname(fitsfn), gfn)
+                if os.path.isfile(guess):
+                    print("[DEBUG] Fits filename {:} is missing; using {:}".format(os.path.basename(fitsfn), gfn), file=sys.stderr)
+                    fits_info[idx]['fn'] = guess
+                    file_is_missing = False
+        if file_is_missing: missing_files.append(fitsfn)
+    return fits_info, missing_files
+
 if __name__ == "__main__":
 
 # parse cmd
@@ -59,10 +94,20 @@ if __name__ == "__main__":
 # parse the config file
     config = cfgio.parseConfigInout(args.config)
 
-# get the FITS file list, with corresponding elements
-    fits_info = cfgio.configFitsFileList(config)
-    for idx, fits in enumerate(fits_info): 
-        processFits( fits['fn'] ) #TODO
-        fits[idx]['values'] = # TODO
+# check input FITS files
+    fits_info, missing_files = checkInputFits(cfgio.configFitsFileList(config))
+    if missing_files != []:
+        err = '\n'.join(missing_files)
+        print("[ERROR] Missing FITS files: {:}".format(err), file=sys.stderr)
+        sys.exit(1)
 
-# ion abundances
+# Specific Slit Analysis
+    slits = cfgio.configSpecificSlitAnalysis(config)
+    specific_slit.specific_slit_analysis(fits_info, slits)
+
+# get the FITS file list, with corresponding elements
+#    fits_info = cfgio.configFitsFileList(config)
+#    for idx, fits in enumerate(fits_info): 
+#        print(idx, fits)
+#        # processFits( fits['fn'] ) #TODO
+#        # fits[idx]['values'] = # TODO

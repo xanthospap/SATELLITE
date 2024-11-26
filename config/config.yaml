@@ -4,8 +4,12 @@ geometry:
   add_pixels_left: 4
   add_pixels_right: 4
 data_list:
-  prefix: /home/xanthos/Software/Satellite/data
+  prefix: /home/xanthos/Software/SATELLITE/data
   suffix: fit
+  # Pre-suffix for error images, example: Ar3_7136e.fit
+  error_img_id: e
+  # Pre-suffix for data images, example: Ar3_7136s.fit
+  data_img_id: s
   element_list:
     - atom: H
       spectrum: 
@@ -13,8 +17,6 @@ data_list:
           atomic_list: 
             - 6563
             - 4861 
-            - 4340 
-            - 4101
     - atom: He
       spectrum: 
         i:
@@ -24,7 +26,6 @@ data_list:
         ii:
           atomic_list: 
             - 5412
-            - 4686
     - atom: N
       spectrum: 
         i:
@@ -39,17 +40,48 @@ data_list:
       spectrum: 
         i:
           atomic_list: 
-            - 5577
             - 6300
-            - 6363
         ii:
           atomic_list: 
-            - 3727
-            - 3729
             - 7320
             - 7330
         iii:
           atomic_list: 
-            - 4363
             - 4959
             - 5007
+    - atom: S
+      spectrum: 
+        ii:
+          atomic_list: 
+            - 6716
+            - 6731
+        iii:
+          atomic_list: 
+            - 6312
+            - 9069
+    - atom: Ar
+      spectrum: 
+        iii:
+          atomic_list: 
+            - 7136
+    - atom: Cl
+      spectrum: 
+        iii:
+          atomic_list: 
+            - 5517
+            - 5538
+analysis:
+  specific_slit_analysis:
+    # to skip specific slit analysis set 'skip' to true
+    skip: false
+    slits:
+      # For each slit enter: PA, width, height, xcrd, ycrd 
+      # as a comma-seperated list
+      # - 79, 10, 320, 153, 106
+      - 79, 8, 25, 37, 148
+      - 79, 8, 21, 68, 142
+      - 79, 8, 42, 104, 135
+      - 79, 8, 18, 140, 128
+      # - 79, 8, 8, 169, 123
+      # - 79, 8, 46, 202, 116
+      # - 79, 8, 25, 254, 106
