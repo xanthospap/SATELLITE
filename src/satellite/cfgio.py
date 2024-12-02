@@ -2,6 +2,8 @@
 
 import yaml
 import os
+import sys
+from satellite import roman
 
 def parseConfigInout(fn: str):
     """ 
@@ -30,13 +32,11 @@ def configFitsFileList(dct: dict):
 
     Results should be something like: 
     [
-      {'type': 'data', 'element': 'H', 'spectrum' : 'i',  'atomic': 6563, 'fn': '/home/.../Hi_6563s.fit'}
-      {'type': 'data', 'element': 'H', 'spectrum' : 'i',  'atomic': 4861, 'fn': '/home/.../Hi_4861s.fit'}
-      {'type': 'data', 'element': 'H', 'spectrum' : 'i',  'atomic': 4340, 'fn': '/home/.../Hi_4340s.fit'}
-      {'type': 'data', 'element': 'H', 'spectrum' : 'i',  'atomic': 4101, 'fn': '/home/.../Hi_4101s.fit'}
-      {'type': 'data', 'element': 'He', 'spectrum': 'i',  'atomic': 5876, 'fn': '/home/.../Hei_5876s.fit'}
-      {'type': 'error', 'element': 'He', 'spectrum': 'i',  'atomic': 6678, 'fn': '/home/.../Hei_6678e.fit'}
-      {'type': 'error', 'element': 'He', 'spectrum': 'ii', 'atomic': 5412, 'fn': '/home/.../Heii_5412e.fit'}
+      {'element': 'H', 'spectrum' : 'i',  'atomic': 6563, 'fns': '/home/.../Hi_6563s.fit', 'fne': '/home/.../Hi_6563e.fit'}
+      {'element': 'H', 'spectrum' : 'i',  'atomic': 4861, 'fns': '/home/.../Hi_4861s.fit', 'fne': '/home/.../Hi_4861e.fit'}
+      {'element': 'H', 'spectrum' : 'i',  'atomic': 4340, 'fns': '/home/.../Hi_4340s.fit', 'fne': '/home/.../Hi_4340e.fit'}
+      {'element': 'H', 'spectrum' : 'i',  'atomic': 4101, 'fns': '/home/.../Hi_4101s.fit', 'fne': '/home/.../Hi_4101e.fit'}
+      {'element': 'He', 'spectrum': 'i',  'atomic': 5876, 'fns': '/home/.../Hei_5876s.fit','fne': '/home/.../Hei_5876e.fit'}
     ]
     """
     fns = []
@@ -45,11 +45,18 @@ def configFitsFileList(dct: dict):
     for element in dct['data_list']['element_list']: 
         for spec in element['spectrum']: 
             for atomic in element['spectrum'][spec]['atomic_list']:
-                fn = element['atom'] + spec + '_' + str(atomic) + did +'.' + dct['data_list']['suffix']
-                fns.append({'type': 'data', 'element': element['atom'], 'spectrum': spec, 'atomic': atomic, 'fn': os.path.join(dct['data_list']['prefix'], fn)})
-                fn = element['atom'] + spec + '_' + str(atomic) + eid +'.' + dct['data_list']['suffix']
-                fns.append({'type': 'data', 'element': element['atom'], 'spectrum': spec, 'atomic': atomic, 'fn': os.path.join(dct['data_list']['prefix'], fn)})
+                sfn = element['atom'] + spec + '_' + str(atomic) + did +'.' + dct['data_list']['suffix']
+                efn = element['atom'] + spec + '_' + str(atomic) + eid +'.' + dct['data_list']['suffix']
+                fns.append({'element': element['atom'], 'spectrum': spec, 'atomic': atomic, 'fns': os.path.join(dct['data_list']['prefix'], sfn), 'fne': os.path.join(dct['data_list']['prefix'], efn)})
     return fns
+
+def elementInputDict(fitsd: list, reference_element: dict):
+    for obj in fitsd:
+        matched = True
+        for key in ['element', 'spectrum', 'atomic']:
+            if obj[key] != reference_element[key]: matched = False
+        if matched == True: return obj
+    raise RuntimeError("[ERROR] Failed matching element {:}/{:}/{:} to available input file".format(reference_element['element'], reference_element['spectrum'], reference_element['atomic']))
 
 def configSpecificSlitAnalysis(dct: dict):
     d = dct['analysis']['specific_slit_analysis']
@@ -61,23 +68,53 @@ def configSpecificSlitAnalysis(dct: dict):
         ps = [ int(x) for x in slit.split(',') ]
         slits.append({'PA': ps[0], 'w': ps[1], 'h': ps[2], 'x': ps[3], 'y': ps[4]})
     return slits
+
+def checkInputFits(fitsd: list):
+    missing_files = []
+    for idx, fits in enumerate(fitsd):
+        for ftype in ['fns', 'fne']:
+            file_is_missing = False
+            fitsfn = fits[ftype]
+            if not os.path.isfile(fitsfn):
+                print("[WRNNG] Missing Fits file {:}".format(fitsfn), file=sys.stderr)
+                bn = os.path.basename(fitsfn)
+                file_is_missing = True
+# find spectrum in filename
+                sstr = fits['spectrum']
+# replace roman spectrum with int and see if file exists
+                if bn.find(sstr) >= 0:
+                    gfn = bn.replace(sstr, str(roman.roman2int(sstr)), 1)
+                    guess = os.path.join(os.path.dirname(fitsfn), gfn)
+                    if os.path.isfile(guess):
+# change the name in the return list
+                        print("[DEBUG] Fits filename {:} is missing; using {:}".format(os.path.basename(fitsfn), gfn), file=sys.stderr)
+                        fitsd[idx][ftype] = guess
+                        file_is_missing = False
+                if file_is_missing and bn.find(sstr) >= 0:
+                    gfn = bn.replace(sstr, sstr.upper(), 1)
+                    guess = os.path.join(os.path.dirname(fitsfn), gfn)
+                    if os.path.isfile(guess):
+                        print("[DEBUG] Fits filename {:} is missing; using {:}".format(os.path.basename(fitsfn), gfn), file=sys.stderr)
+                        fitsd[idx][ftype] = guess
+                        file_is_missing = False
+            if file_is_missing: missing_files.append(fitsfn)
+    return fitsd, missing_files
+
+def indexOf(atom: str, spectrum: str, atomic_number: int, fitsd: list):
+    for idx, lst in enumerate(fitsd):
+        if lst['element'] == atom and lst['spectrum'] == spectrum and lst['atomic'] == atomic_number:
+            return idx
+    return -1
+
+(O1_6300+O1_6363)/(O2_3727+O2_3729)
+
+def partialResolve(pstr):
+    lst = []
+    for i in pstr.split('+'):
+        lst += [1e0, i]
+    for idx, s in 
     
-if __name__ == "__main__" :
-    import sys
-    d = parseConfigInout(sys.argv[1])
-    print(d)
-    print("Element dictionary is:")
-    print(d['data_list']['element_list'])
-    print("Element:")
-    for element in d['data_list']['element_list']: 
-        print(element['atom'])
-        print('\tSpectrums:')
-        for spec in element['spectrum']: 
-            print("\t",spec)
-            print("\t\tAtomics:")
-            for atomic in element['spectrum'][spec]['atomic_list']:
-                fn = element['atom'] + spec + '_' + str(atomic) + '.' + d['data_list']['suffix']
-                print("\t\t{:} - expected fn: {:}".format(atomic, os.path.join(d['data_list']['prefix'], fn)))
-    print("------------------------------------------------------------------")
-    fns = configFitsFileList(d)
-    for i in fns: print(i)
+def resolveRatioStr(rstr: str):
+    nom, denom = rstr.split('/')
+    nom = nom.lstrip('(').rstrip(')')
+
