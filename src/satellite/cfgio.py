@@ -20,7 +20,7 @@ def configElements(dct: dict):
     Results should be something like:
     ['H', 'He', 'N', 'O']
     """
-    return [ k['atom'] for k in dct['data_list']['element_list'] ]
+    return [ k['element'] for k in dct['data_list']['element_list'] ]
 
 def configFitsFileList(dct: dict):
     """
