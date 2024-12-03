@@ -53,6 +53,22 @@ parser.add_argument(
     help='Predefined extinction (reddening) correction. See https://notebook.community/Morisset/PyNeb_devel/docs/Notebooks/PyNeb_manual_5')
 
 parser.add_argument(
+    '--intensities-out',
+    metavar='INTENSITIES_OUTPUT_FILE',
+    dest='intensities_out',
+    default='output_line_intensities',
+    required=False,
+    help='Output file to write computed inensity results.')
+
+parser.add_argument(
+    '--ratios-out',
+    metavar='RATIOS_OUTPUT_FILE',
+    dest='ratios_out',
+    default='output_line_ratios',
+    required=False,
+    help='Output file to write computed ratio results.')
+
+parser.add_argument(
     '--verbose',
     action='store_true',
     dest='verbose',
@@ -81,5 +97,4 @@ if __name__ == "__main__":
         sys.exit(1)
 
 # Specific Slit Analysis
-    slits = cfgio.configSpecificSlitAnalysis(config)
-    specific_slit.specific_slit_analysis(fits_info, slits)
+    specific_slit.specific_slit_analysis(fits_info, cfgio.configSpecificSlitAnalysis(config), cfgio.configElementRatiosList(config), args.intensities_out, args.ratios_out)

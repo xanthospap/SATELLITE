@@ -2,8 +2,12 @@
 
 import yaml
 import os
+import re
 import sys
+
+import pyneb as pn
 from satellite import roman
+
 
 def parseConfigInout(fn: str):
     """ 
@@ -106,15 +110,89 @@ def indexOf(atom: str, spectrum: str, atomic_number: int, fitsd: list):
             return idx
     return -1
 
-(O1_6300+O1_6363)/(O2_3727+O2_3729)
+def closestPyNebElement(key: str, atomic_number: int):
+    min_diff = 1000000
+    pn_wl = None
+    for wl in pn.LINE_LABEL_LIST[key]:
+        if re.fullmatch('[0-9]*A', wl):
+            diff = abs(int(wl[0:-1]) - atomic_number)
+            if diff < min_diff: 
+                pn_wl = wl
+                min_diff = diff
+    print("[WRNNG] PyNeb is missing wavelength {:} for element {:}; using {:} instead".format(atomic_number, key, pn_wl))
+    return pn_wl
 
-def partialResolve(pstr):
-    lst = []
-    for i in pstr.split('+'):
-        lst += [1e0, i]
-    for idx, s in 
+def objectIntensityPyNebCode(atom: str, spectrum: str, atomic_number: int):
+#
+# A full list can be obtained as:
+# import pyneb as pn
+# pn.LINE_LABEL_LIST
+#
+    try:
+        spectrum = int(spectrum)
+    except:
+        spectrum = roman.roman2int(spectrum)
+    if atom in ['H', 'He']:
+        pnatom = "{:}{:}r".format(atom, spectrum)
+    else:
+        pnatom = "{:}{:}".format(atom, spectrum)
     
-def resolveRatioStr(rstr: str):
-    nom, denom = rstr.split('/')
-    nom = nom.lstrip('(').rstrip(')')
+    try:
+        wls = pn.LINE_LABEL_LIST[pnatom]
+    except:
+        wls = None
+        print('[ERROR] Failed matching object {:}/{:} (aka {:}) to PyNeb (see LINE_LABEL_LIST)'.format(atom, spectrum, pnatom), file=sys.stderr)
+    if wls is None: 
+        raise RuntimeError('[ERROR] Failed matching object {:}/{:}/{:} to PyNeb (see LINE_LABEL_LIST)'.format(atom, spectrum, atomic_number))
 
+    pnatomic = '{:}A'.format(atomic_number)
+    if pnatomic not in wls:
+         pnatomic = closestPyNebElement(pnatom, atomic_number)
+
+    pnstr = '_'.join([pnatom, pnatomic])
+
+# Validate
+    try:
+        pn.LINE_LABEL_LIST[pnstr.split('_')[0]].index(pnstr.split('_')[1])
+        return pnstr
+    except:
+        print('[ERROR] Failed matching object {:}/{:}/{:} to PyNeb (see LINE_LABEL_LIST)'.format(atom, spectrum, atomic_number), file=sys.stderr)
+    raise RuntimeError('[ERROR] Failed matching object {:}/{:}/{:} to PyNeb (see LINE_LABEL_LIST)'.format(atom, spectrum, atomic_number))
+
+def satellite_str2pyneb_str(sstr: str):
+    parts = sstr.split('_')
+    assert(len(parts) == 2)
+    atomic_number = int(parts[1])
+    g = re.fullmatch("([A-Za-z]*)([0-9])", parts[0].strip())
+    if g: 
+        return objectIntensityPyNebCode(g[1], g[2], atomic_number)
+    g = re.fullmatch("([A-Za-z]*)([iIvV]*)(r+)", parts[0].strip())
+    if g: 
+        return objectIntensityPyNebCode(g[1], roman.roman2int(g[2]), atomic_number)
+    raise RuntimeError("[ERROR] Failed resolving satellite string {:}".format(sstr))
+
+def partialResolve(pstr: str):
+    lstpl = []; lst = [];
+    for i in pstr.split('+'):
+        lstpl += [1e0, i.strip()]
+    for idx, s in enumerate(lstpl):
+        try:
+            1 + s
+            lst += [s]
+        except:
+            if '-' in s:
+                lst += [s.split('-')[0]]
+                for ss in s.split('-')[1:]:
+                    lst += [-1,ss]
+            else:
+                lst += [s]
+    return lst
+
+def resolveRatioStr(rstr: str):
+    [nom, denom] = rstr.split('/')
+    nom = nom.lstrip('(').rstrip(')')
+    denom = denom.lstrip('(').rstrip(')')
+    return partialResolve(nom), partialResolve(denom)
+
+def configElementRatiosList(dct: dict):
+    return dct['analysis']['specific_slit_analysis']['log_ratios']
