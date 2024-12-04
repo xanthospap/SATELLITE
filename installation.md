@@ -1,6 +1,6 @@
 ### Clone the repository
 ```
-git clone git@github.com:xanthospap/SATELLITE.git
+git clone https://github.com/xanthospap/SATELLITE.git
 ```
 and get into the root directory, i.e. `cd SATELLITE`.
 
