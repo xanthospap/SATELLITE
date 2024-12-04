@@ -35,11 +35,10 @@ def computeRatio(ratio: str, intensity_list: list):
         par2  += par[idx-1] * (err / val * np.log(10))
     return var / vpar, np.sqrt(par1**2 + par2**2), ratio
 
-ext_law = 'S79 H83 CCM89'
 monte_carlo_fake_obs = 3
 reference_element = {'element': 'H', 'spectrum': 'i', 'atomic': 4861}
 
-def specific_slit_analysis(fitsd: list, slits: list, ratios: list, intensities_out: str, ratios_out):
+def specific_slit_analysis(fitsd: list, slits: list, ratios: list, ext_law: str, intensities_out: str, ratios_out):
 
     global_intensities = {}
     def add_global_intensities(new_list, new_index):
@@ -70,10 +69,12 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, intensities_o
 # for every FITS get the slit specified
         for idx, fits in enumerate(fitsd):
             ar = getFitsSlit(fits['fns'], slit)
+            np.nan_to_num(ar, False)
 # sum all elements of slit
             sm = np.sum(np.sum(ar))
             cpd[idx]['sslit_sum'] = sm
             ar = getFitsSlit(fits['fne'], slit)
+            np.nan_to_num(ar, False)
 # sum all elements of slit
             sm = np.sum(np.sum(ar))
             cpd[idx]['eslit_sum'] = sm
@@ -85,14 +86,14 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, intensities_o
         sobs.readData('test.dat', fileFormat='lines_in_rows_err_cols', errIsRelative=False)
         sobs.def_EBV(label1="H1r_6563A", label2="H1r_4861A", r_theo=2.85)
         sobs.extinction.law = ext_law
-        sobs.correctData()
+        sobs.correctData(normWave=4861.)
 
         eobs = pn.Observation()
         eobs.readData('test.dat', fileFormat='lines_in_rows_err_cols', errIsRelative=False)
         eobs.addMonteCarloObs(N=monte_carlo_fake_obs)
         eobs.def_EBV(label1="H1r_6563A", label2="H1r_4861A", r_theo=2.85)
         eobs.extinction.law = ext_law
-        eobs.correctData()
+        eobs.correctData(normWave=4861.)
 
         RC = pn.RedCorr(E_BV=sobs.extinction.E_BV[0], law=ext_law)
         ref_pnstr = sc.objectIntensityPyNebCode(reference_element['element'], reference_element['spectrum'], reference_element['atomic'])
