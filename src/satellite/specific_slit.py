@@ -12,7 +12,7 @@ import pyneb as pn
 
 def getFitsSlit(fits_fn: str, slit: dict):
     mat = fs.loadFitsImageData(fits_fn)
-    return fs.getVerticalSlit(mat, slit['y'], slit['x'], slit['w'], slit['h'])
+    return fs.getVerticalSlit(mat, slit['y']-1, slit['x']-1, slit['w'], slit['h'])
 
 def computeRatio(ratio: str, intensity_list: list):
     def getIntensity(element):

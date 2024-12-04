@@ -21,7 +21,7 @@ def loadFitsImageData(fn: str):
     with fits.open(fn) as hdul: return hdul[0].data
 
 def getVerticalSlit(mat, row: int, col: int, width: int, height: int):
-    n,m = mat.shape
+    n, m = mat.shape
     if row >= n or col >= m:
         raise RuntimeError("[ERROR] Base coordinates of slit requested are out of image (dim:{:}x{:} requested:({:},{:}))!\n".format(n,m,row,col))
     if width%2 == 0:
@@ -31,11 +31,12 @@ def getVerticalSlit(mat, row: int, col: int, width: int, height: int):
     if (w!=1) and (col - w < 0 or col + w >= m):
         print("[ERROR] Invalid slit width! Requested width {:} centered at {:} but matrix width is {:}".format(width, col, m), file=sys.stderr)
         raise RuntimeError("[ERROR] Invalid slit width! The slit requested would fall outside the image\n")
-    if row + height > n:
-        print("[ERROR] Invalid slit height! Requested height {:} centered at {:} but matrix has total height of {:} pixels".format(height, row, n), file=sys.stderr)
+    h = height // 2
+    if (h!=1) and (row - h < 0 or col + h >= n):
+        print("[ERROR] Invalid slit height! Requested height {:} centered at {:} but matrix height is {:}".format(height, row, n), file=sys.stderr)
         raise RuntimeError("[ERROR] Invalid slit height! The slit requested would fall outside the image\n")
-    l,r = (col-w, col+w+1)
-    t,b = (row, row+height) if height>1 else (row, row+1)
+    l, r = (col-w, col+w+1)
+    t, b = (row-h, row+h+1)
     return mat[t:b, l:r].flatten() if (width<=1 or height<=1) else mat[t:b, l:r]
 
 def setCenterPixel(mat, row :int, col :int, rectangular=False, missing_vals=0):
