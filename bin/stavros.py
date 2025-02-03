@@ -97,4 +97,4 @@ if __name__ == "__main__":
         sys.exit(1)
 
 # Specific Slit Analysis
-    specific_slit.specific_slit_analysis(fits_info, cfgio.configSpecificSlitAnalysis(config), cfgio.configElementRatiosList(config), args.pn_extinction, args.intensities_out, args.ratios_out)
+    specific_slit.specific_slit_analysis(fits_info, cfgio.configSpecificSlitAnalysis(config), cfgio.configElementRatiosList(config), cfgio.configDensityDiagnostics(config), cfgio.configTemperatureDiagnostics(config), args.pn_extinction, args.intensities_out, args.ratios_out)

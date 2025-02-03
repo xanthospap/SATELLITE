@@ -38,7 +38,7 @@ def computeRatio(ratio: str, intensity_list: list):
 monte_carlo_fake_obs = 3
 reference_element = {'element': 'H', 'spectrum': 'i', 'atomic': 4861}
 
-def specific_slit_analysis(fitsd: list, slits: list, ratios: list, ext_law: str, intensities_out: str, ratios_out):
+def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagnostics: list, tempterature_diagnostics: list, ext_law: str, intensities_out: str, ratios_out):
 
     global_intensities = {}
     def add_global_intensities(new_list, new_index):
@@ -128,3 +128,22 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, ext_law: str,
 
 # TeNe_specific_slits_script
         diags = pn.Diagnostics()
+        for entry in density_diagnostics+tempterature_diagnostics:
+            diags.addDiag([entry])
+# Get all added diagnostics
+        all_diags = diags.diagNames
+
+# Define known temperature and density-sensitive patterns
+        temp_keywords = ['5755', '4363', '6312']  # Common temp-sensitive lines
+        dens_keywords = ['6731', '6716', '3726', '3729']  # Common density-sensitive lines
+
+# Filter diagnostics into temperature and density lists
+        temp_diags = [d for d in all_diags if any(k in d for k in temp_keywords)]
+        dens_diags = [d for d in all_diags if any(k in d for k in dens_keywords)]
+
+# Generate all valid (temp, density) pairs
+        valid_pairs = [(t, d) for t in temp_diags for d in dens_diags]
+
+# Print valid pairs
+        for t, d in valid_pairs:
+            print(f"Valid pair: {t} (Temp) ↔ {d} (Density)")

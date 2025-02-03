@@ -125,7 +125,7 @@ analysis:
       - '[OII] 3726/3729'
       - '[ClIII] 5538/5518'
       - '[ArIV] 4740/4711'
-    temperature_diganostics:
+    temperature_diagnostics:
       - '[NII] 5755/6584+'
       - '[OIII] 4363/5007+'
       - '[OI] 5577/6300+'
