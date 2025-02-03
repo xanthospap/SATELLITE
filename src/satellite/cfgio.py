@@ -196,3 +196,9 @@ def resolveRatioStr(rstr: str):
 
 def configElementRatiosList(dct: dict):
     return dct['analysis']['specific_slit_analysis']['log_ratios']
+
+def configDensityDiagnostics(dct: dict):
+    return dct['analysis']['specific_slit_analysis']['density_diagnostics']
+
+def configTemperatureDiagnostics(dct: dict):
+    return dct['analysis']['specific_slit_analysis']['temperature_diagnostics']

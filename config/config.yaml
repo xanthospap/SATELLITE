@@ -119,3 +119,16 @@ analysis:
       - (Cl3_5517+Cl3_5538)/H1_4861
       - C1_8727/H1_6563
       - C2_6461/H1_6563
+    density_diagnostics:
+      # Note: you'll have to quote lines containing square brackets
+      - '[SII] 6731/6716'
+      - '[OII] 3726/3729'
+      - '[ClIII] 5538/5518'
+      - '[ArIV] 4740/4711'
+    temperature_diganostics:
+      - '[NII] 5755/6584+'
+      - '[OIII] 4363/5007+'
+      - '[OI] 5577/6300+'
+      - '[OI] 5577/6300'
+      - '[OII] 3727+/7325+'
+      - '[SIII] 6312/9069'

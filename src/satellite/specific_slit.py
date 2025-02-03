@@ -125,3 +125,6 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, ext_law: str,
     with open(ratios_out, 'w') as fout:
         for key, lst in global_ratios.items():
             print("{:<45} {:}".format(key, ' '.join(['{:10.4f}'.format(x) for x in lst])), file=fout)
+
+# TeNe_specific_slits_script
+        diags = pn.Diagnostics()
