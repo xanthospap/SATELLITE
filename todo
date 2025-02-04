@@ -8,3 +8,25 @@
   140 (in specific_slit.py)? In the original code (TeNe_specific_slits_script.py) 
   line 312, defines a PyNeb input file which is the same i have in line 104 
   and 110, right ?
+  
+ 3. ionicabundances_specific_slits_script.py
+   To compute abundances we need TeNe data for a given pair (i.e. for Cl++_Te_Ne 
+   we use Te from SIII and Ne from ClIII). These are give at the input file outputs.txt 
+   as:
+        He+_Te_Ne                                        TeSIIINeClIII
+        He++_Te_Ne                                       TeSIIINeClIII
+        Oo_Te_Ne                                         TeSIIINeClIII
+        O+_Te_Ne                                         TeSIIINeClIII
+        O++_Te_Ne                                        TeSIIINeClIII
+        No_Te_Ne                                         TeSIIINeClIII
+        N+_Te_Ne                                         TeSIIINeClIII
+        S+_Te_Ne                                         TeSIIINeClIII
+        S++_Te_Ne                                        TeSIIINeClIII
+        Ar++_Te_Ne                                       TeSIIINeClIII
+        Ar+++_Te_Ne                                      TeSIIINeClIII
+        Ne++_Te_Ne                                       TeSIIINeClIII
+        Cl+_Te_Ne                                        TeSIIINeClIII
+        Cl++_Te_Ne                                       TeSIIINeClIII
+        Cl+++_Te_Ne                                      TeSIIINeClIII
+   Will the column on the right always be the same for all elements? Will it always be 
+   TeSIIINeClIII?
