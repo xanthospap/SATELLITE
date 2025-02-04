@@ -2,6 +2,7 @@ import numpy as np
 import scipy.ndimage as nd
 import copy
 import sys
+import re
 
 import satellite.fitsutils as fs
 import satellite.intensity as si
@@ -35,6 +36,15 @@ def computeRatio(ratio: str, intensity_list: list):
         par2  += par[idx-1] * (err / val * np.log(10))
     return var / vpar, np.sqrt(par1**2 + par2**2), ratio
 
+def extract_ion(label):
+    """ Example:
+        t = "[OI] 5577/6300+"
+        ion = extract_ion(t)
+        print(ion)  # Output: "[OI]"
+    """
+    match = re.match(r"\[(.*?)\]", label)  # Find text inside square brackets
+    return match.group(0) if match else None  # Return full [Ion] if found
+
 monte_carlo_fake_obs = 3
 reference_element = {'element': 'H', 'spectrum': 'i', 'atomic': 4861}
 
@@ -62,6 +72,11 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
             global_ratios[ratio][new_index*2  ] = val
             global_ratios[ratio][new_index*2+1] = err
 
+    global_tene = {}
+    def add_global_tene(pair, vals, err_vals, new_index):
+        if new_index == 0:
+
+
 # for every slit
     for slit_idx, slit in enumerate(slits):
 # copy of dictionary
@@ -78,9 +93,12 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
 # sum all elements of slit
             sm = np.sum(np.sum(ar))
             cpd[idx]['eslit_sum'] = sm
-            # print(cpd[idx])
+
+        ## <-- End Looping FITS --> ##
+
 # compile the intensities data file (for PyNeb)
         si.makeIntensitiesDataFile(cpd, reference_element, ['sslit_sum', 'eslit_sum'], 'test.dat')
+
 # PyNeb stuff
         sobs = pn.Observation()
         sobs.readData('test.dat', fileFormat='lines_in_rows_err_cols', errIsRelative=False)
@@ -117,7 +135,29 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
                 add_global_ratio(val, err, rstr, slit_idx)
             except:
                 print('[WRNNG] Skipping ratio {:}'.format(ratio))
-                
+
+# TeNe_specific_slits_script
+        diags = pn.Diagnostics()
+        # Register all diagnostics with PyNeb
+        diags.addDiag(density_diagnostics+tempterature_diagnostics)
+        # Retrieve the list of valid diagnostics recognized by PyNeb
+        all_diags = diags.getDiagLabels()
+        # Filter out only valid diagnostics
+        valid_temp = [t for t in tempterature_diagnostics if t in all_diags]
+        valid_dens = [d for d in density_diagnostics if d in all_diags]
+        # Automatically generate valid (temperature, density) pairs
+        valid_pairs = [(t, d) for t in valid_temp for d in valid_dens]
+        # Print valid pairs
+        tene_list = []
+        for t, d in valid_pairs:
+            try:
+                st, sd = diags.getCrossTemDen(t, d, obs=sobs)
+                et, ed = diags.getCrossTemDen(t, d, obs=eobs)
+                print("PyNeb: Te {:} = {:.1f} Ne {:} = {:.2f}".format(extract_ion(t), st, extract_ion(d), sd))
+            except:
+                print(f'[WRNNG] Skipping Tem/Den pair {t} (Temp) ↔ {d} (Density)')
+    
+    ## <-- End Looping Slits --> ##
     with open(intensities_out, 'w') as fout:
         for key, lst in global_intensities.items():
             print("{:<10} {:}".format(key, ' '.join(['{:10.4f}'.format(x) for x in lst])), file=fout)
@@ -126,24 +166,3 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
         for key, lst in global_ratios.items():
             print("{:<45} {:}".format(key, ' '.join(['{:10.4f}'.format(x) for x in lst])), file=fout)
 
-# TeNe_specific_slits_script
-        diags = pn.Diagnostics()
-        for entry in density_diagnostics+tempterature_diagnostics:
-            diags.addDiag([entry])
-# Get all added diagnostics
-        all_diags = diags.diagNames
-
-# Define known temperature and density-sensitive patterns
-        temp_keywords = ['5755', '4363', '6312']  # Common temp-sensitive lines
-        dens_keywords = ['6731', '6716', '3726', '3729']  # Common density-sensitive lines
-
-# Filter diagnostics into temperature and density lists
-        temp_diags = [d for d in all_diags if any(k in d for k in temp_keywords)]
-        dens_diags = [d for d in all_diags if any(k in d for k in dens_keywords)]
-
-# Generate all valid (temp, density) pairs
-        valid_pairs = [(t, d) for t in temp_diags for d in dens_diags]
-
-# Print valid pairs
-        for t, d in valid_pairs:
-            print(f"Valid pair: {t} (Temp) ↔ {d} (Density)")

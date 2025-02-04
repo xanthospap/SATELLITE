@@ -1,1 +1,10 @@
-pyNeb
+1. TeNe_specific_slits_script.py
+  line 522 (repeated many times)
+  (a,b) is a tuple of scalars (so is (a1,b1)). what is the meaning of lines 
+  512 to 520 and especially this: Te_error.NIISII[i] = np.std(np.nan_to_num(a))
+
+2. TeNe_specific_slits_script.py
+  For the new version: do i need to re-initialize PyNeb stuff before line 
+  140 (in specific_slit.py)? In the original code (TeNe_specific_slits_script.py) 
+  line 312, defines a PyNeb input file which is the same i have in line 104 
+  and 110, right ?
