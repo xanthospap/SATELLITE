@@ -9,7 +9,7 @@
   line 312, defines a PyNeb input file which is the same i have in line 104 
   and 110, right ?
   
- 3. ionicabundances_specific_slits_script.py
+3. ionicabundances_specific_slits_script.py
    To compute abundances we need TeNe data for a given pair (i.e. for Cl++_Te_Ne 
    we use Te from SIII and Ne from ClIII). These are give at the input file outputs.txt 
    as:
@@ -30,3 +30,5 @@
         Cl+++_Te_Ne                                      TeSIIINeClIII
    Will the column on the right always be the same for all elements? Will it always be 
    TeSIIINeClIII?
+
+4. To compute abundancies in needed to: pip install h5py

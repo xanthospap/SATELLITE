@@ -4,10 +4,12 @@ from satellite import version
 from satellite import cfgio
 from satellite import roman
 from satellite import specific_slit
+from satellite import satlogger
 
 import argparse
 import os
 import sys
+import logging
 
 satellite_version = '2.r1'
 
@@ -74,17 +76,21 @@ parser.add_argument(
     dest='verbose',
     help='Verbose mode on')
 
+parser.add_argument(
+    '--log',
+    metavar='LOG_FILE',
+    dest='log_file',
+    default=None,
+    required=False,
+    help='Write log to an output file.')
 
 if __name__ == "__main__":
 
 # parse cmd
     args = parser.parse_args()
 
-# verbose print
-    verboseprint = print if args.verbose else lambda *a, **k: None
-    
-    verboseprint('Satellite (module) version: {:}'.format(version.satellite_version()))
-    verboseprint('Satellite (binary) version: {:}'.format(satellite_version))
+# setup a logger
+    logger = satlogger.setup_logger('specific_slit', logging.DEBUG, args.log_file)
 
 # parse the config file
     config = cfgio.parseConfigInout(args.config)
@@ -97,4 +103,4 @@ if __name__ == "__main__":
         sys.exit(1)
 
 # Specific Slit Analysis
-    specific_slit.specific_slit_analysis(fits_info, cfgio.configSpecificSlitAnalysis(config), cfgio.configElementRatiosList(config), cfgio.configDensityDiagnostics(config), cfgio.configTemperatureDiagnostics(config), args.pn_extinction, args.intensities_out, args.ratios_out)
+    specific_slit.specific_slit_analysis(fits_info, cfgio.configSpecificSlitAnalysis(config), cfgio.configElementRatiosList(config), cfgio.configDensityDiagnostics(config), cfgio.configTemperatureDiagnostics(config), args.pn_extinction, args.intensities_out, args.ratios_out, logger)

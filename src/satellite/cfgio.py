@@ -54,12 +54,14 @@ def configFitsFileList(dct: dict):
                 fns.append({'element': element['atom'], 'spectrum': spec, 'atomic': atomic, 'fns': os.path.join(dct['data_list']['prefix'], sfn), 'fne': os.path.join(dct['data_list']['prefix'], efn)})
     return fns
 
-def elementInputDict(fitsd: list, reference_element: dict):
+def elementInputDict(fitsd: list, reference_element: dict, logger=None):
     for obj in fitsd:
         matched = True
         for key in ['element', 'spectrum', 'atomic']:
             if obj[key] != reference_element[key]: matched = False
         if matched == True: return obj
+    if logger is not None:
+        logger.error("Failed matching element {:}/{:}/{:} to available input file".format(reference_element['element'], reference_element['spectrum'], reference_element['atomic']))
     raise RuntimeError("[ERROR] Failed matching element {:}/{:}/{:} to available input file".format(reference_element['element'], reference_element['spectrum'], reference_element['atomic']))
 
 def configSpecificSlitAnalysis(dct: dict):
@@ -73,14 +75,14 @@ def configSpecificSlitAnalysis(dct: dict):
         slits.append({'PA': ps[0], 'w': ps[1], 'h': ps[2], 'x': ps[3], 'y': ps[4]})
     return slits
 
-def checkInputFits(fitsd: list):
+def checkInputFits(fitsd: list, logger=None):
     missing_files = []
     for idx, fits in enumerate(fitsd):
         for ftype in ['fns', 'fne']:
             file_is_missing = False
             fitsfn = fits[ftype]
             if not os.path.isfile(fitsfn):
-                print("[WRNNG] Missing Fits file {:}".format(fitsfn), file=sys.stderr)
+                if logger: logger.warning("Missing Fits file {:}".format(fitsfn))
                 bn = os.path.basename(fitsfn)
                 file_is_missing = True
 # find spectrum in filename
@@ -91,14 +93,14 @@ def checkInputFits(fitsd: list):
                     guess = os.path.join(os.path.dirname(fitsfn), gfn)
                     if os.path.isfile(guess):
 # change the name in the return list
-                        print("[DEBUG] Fits filename {:} is missing; using {:}".format(os.path.basename(fitsfn), gfn), file=sys.stderr)
+                        if logger: logger.debug("Fits filename {:} is missing; using {:}".format(os.path.basename(fitsfn), gfn))
                         fitsd[idx][ftype] = guess
                         file_is_missing = False
                 if file_is_missing and bn.find(sstr) >= 0:
                     gfn = bn.replace(sstr, sstr.upper(), 1)
                     guess = os.path.join(os.path.dirname(fitsfn), gfn)
                     if os.path.isfile(guess):
-                        print("[DEBUG] Fits filename {:} is missing; using {:}".format(os.path.basename(fitsfn), gfn), file=sys.stderr)
+                        if logger: logger.debug("Fits filename {:} is missing; using {:}".format(os.path.basename(fitsfn), gfn))
                         fitsd[idx][ftype] = guess
                         file_is_missing = False
             if file_is_missing: missing_files.append(fitsfn)
@@ -110,7 +112,7 @@ def indexOf(atom: str, spectrum: str, atomic_number: int, fitsd: list):
             return idx
     return -1
 
-def closestPyNebElement(key: str, atomic_number: int):
+def closestPyNebElement(key: str, atomic_number: int, logger=None):
     min_diff = 1000000
     pn_wl = None
     for wl in pn.LINE_LABEL_LIST[key]:
@@ -119,10 +121,10 @@ def closestPyNebElement(key: str, atomic_number: int):
             if diff < min_diff: 
                 pn_wl = wl
                 min_diff = diff
-    print("[WRNNG] PyNeb is missing wavelength {:} for element {:}; using {:} instead".format(atomic_number, key, pn_wl))
+    if logger: logger.warning("PyNeb is missing wavelength {:} for element {:}; using {:} instead".format(atomic_number, key, pn_wl))
     return pn_wl
 
-def objectIntensityPyNebCode(atom: str, spectrum: str, atomic_number: int):
+def objectIntensityPyNebCode(atom: str, spectrum: str, atomic_number: int, logger=None):
 #
 # A full list can be obtained as:
 # import pyneb as pn
@@ -141,7 +143,7 @@ def objectIntensityPyNebCode(atom: str, spectrum: str, atomic_number: int):
         wls = pn.LINE_LABEL_LIST[pnatom]
     except:
         wls = None
-        print('[ERROR] Failed matching object {:}/{:} (aka {:}) to PyNeb (see LINE_LABEL_LIST)'.format(atom, spectrum, pnatom), file=sys.stderr)
+        if logger: logger.error("Failed matching object {:}/{:} (aka {:}) to PyNeb (see LINE_LABEL_LIST)".format(atom, spectrum, pnatom))
     if wls is None: 
         raise RuntimeError('[ERROR] Failed matching object {:}/{:}/{:} to PyNeb (see LINE_LABEL_LIST)'.format(atom, spectrum, atomic_number))
 
@@ -156,19 +158,20 @@ def objectIntensityPyNebCode(atom: str, spectrum: str, atomic_number: int):
         pn.LINE_LABEL_LIST[pnstr.split('_')[0]].index(pnstr.split('_')[1])
         return pnstr
     except:
-        print('[ERROR] Failed matching object {:}/{:}/{:} to PyNeb (see LINE_LABEL_LIST)'.format(atom, spectrum, atomic_number), file=sys.stderr)
+        if logger: logger.error('[ERROR] Failed matching object {:}/{:}/{:} to PyNeb (see LINE_LABEL_LIST)'.format(atom, spectrum, atomic_number))
     raise RuntimeError('[ERROR] Failed matching object {:}/{:}/{:} to PyNeb (see LINE_LABEL_LIST)'.format(atom, spectrum, atomic_number))
 
-def satellite_str2pyneb_str(sstr: str):
+def satellite_str2pyneb_str(sstr: str, logger=None):
     parts = sstr.split('_')
     assert(len(parts) == 2)
     atomic_number = int(parts[1])
     g = re.fullmatch("([A-Za-z]*)([0-9])", parts[0].strip())
     if g: 
-        return objectIntensityPyNebCode(g[1], g[2], atomic_number)
+        return objectIntensityPyNebCode(g[1], g[2], atomic_number, logger)
     g = re.fullmatch("([A-Za-z]*)([iIvV]*)(r+)", parts[0].strip())
     if g: 
-        return objectIntensityPyNebCode(g[1], roman.roman2int(g[2]), atomic_number)
+        return objectIntensityPyNebCode(g[1], roman.roman2int(g[2]), atomic_number, logger)
+    if logger: logger.error("Failed resolving satellite string {:}".format(sstr))
     raise RuntimeError("[ERROR] Failed resolving satellite string {:}".format(sstr))
 
 def partialResolve(pstr: str):

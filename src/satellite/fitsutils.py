@@ -20,20 +20,20 @@ def loadFitsImageData(fn: str):
     """
     with fits.open(fn) as hdul: return hdul[0].data
 
-def getVerticalSlit(mat, row: int, col: int, width: int, height: int):
+def getVerticalSlit(mat, row: int, col: int, width: int, height: int, logger):
     n, m = mat.shape
     if row >= n or col >= m:
         raise RuntimeError("[ERROR] Base coordinates of slit requested are out of image (dim:{:}x{:} requested:({:},{:}))!\n".format(n,m,row,col))
     if width%2 == 0:
-        print("[WRNNG] Slit width requested ({:} pixels) is even; truncating to nearest odd number (i.e. {:})".format(width, width+1), file=sys.stderr)
+        if logger: logger.warning("Slit width requested ({:} pixels) is even; truncating to nearest odd number (i.e. {:})".format(width, width+1))
         width = width + 1
     w = width // 2
     if (w!=1) and (col - w < 0 or col + w >= m):
-        print("[ERROR] Invalid slit width! Requested width {:} centered at {:} but matrix width is {:}".format(width, col, m), file=sys.stderr)
+        if logger: logger.error("Invalid slit width! Requested width {:} centered at {:} but matrix width is {:}".format(width, col, m))
         raise RuntimeError("[ERROR] Invalid slit width! The slit requested would fall outside the image\n")
     h = height // 2
     if (h!=1) and (row - h < 0 or col + h >= n):
-        print("[ERROR] Invalid slit height! Requested height {:} centered at {:} but matrix height is {:}".format(height, row, n), file=sys.stderr)
+        if logger: logger.error("Invalid slit height! Requested height {:} centered at {:} but matrix height is {:}".format(height, row, n))
         raise RuntimeError("[ERROR] Invalid slit height! The slit requested would fall outside the image\n")
     l, r = (col-w, col+w+1)
     t, b = (row-h, row+h+1)
