@@ -248,10 +248,9 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
                 logger.info(f"Skipping Tem/Den pair {t} (Temp) ↔ {d} (Density)")
 
 # Ionic Abundancies
-        # print(cpd)
+        ionic_abunndancies_dict = []
         def ref_tene_pair():
             for entry in tene_slit_dict:
-                # print(entry['tene_pair'])
                 if entry['tene_pair'] == ('[SIII] 6312/9069', '[ClIII] 5538/5518'):
                     return entry
             return None
@@ -263,7 +262,34 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
             sabd = pn_atom.getIonAbundance(int_ratio=sobs.getIntens(0)[pn_element], tem=reftene['sT'], den=reftene['sN'], to_eval=extract_wavelength(pn_element), Hbeta=100.)[0]
             eabd = pn_atom.getIonAbundance(int_ratio=eobs.getIntens(0)[pn_element], tem=reftene['eT'], den=reftene['eN'], to_eval=extract_wavelength(pn_element), Hbeta=100.)[0]
             print('{:}+{:}({:})/H+ = {:.2e} \u00B1 {:.4e}'.format(entry['element'], sr.roman2int(entry['spectrum']), extract_wavelength(pn_element), sabd, eabd))
+            ionic_abunndancies_dict.append({'element': entry['element'], 'spectrum': entry['spectrum'], 'atomic': entry['atomic'], 'pn_element': pn_element, 'abundance': sabd, 'abundance_error': eabd})
 
+# ICFs
+        ionic_abunndancies_sums = {}
+        def sum_element_abundancies(elem):
+            # print('Summing Abundancies for element: {:}'.format(elem))
+            atomic_sums = {}
+            for entry in ionic_abunndancies_dict:
+                if entry['element'] == elem:
+                    spectrum = entry['spectrum']
+                    atomic   = entry['atomic']
+                    if spectrum != 'i':
+                        if spectrum in atomic_sums:
+                            t0 = (atomic_sums[spectrum][0]+entry['abundance'])/2e0
+                            t1 = np.sqrt((atomic_sums[spectrum][1]*atomic_sums[spectrum][1] + entry['abundance_error']*entry['abundance_error']))/2e0
+                            atomic_sums[spectrum] = (t0, t1)
+                            # print('\tupdating {:}/{:} with value {:} of line {:}: new mean = {:}'.format(elem, spectrum, entry['abundance'], atomic, atomic_sums[spectrum]))
+                        else:
+                            atomic_sums[spectrum] = (entry['abundance'], entry['abundance_error'])
+                            # print('\tupdating {:}/{:} with value {:} of line {:}: new mean = {:}'.format(elem, spectrum, entry['abundance'], atomic, atomic_sums[spectrum]))
+            print(atomic_sums)
+            return sum([x[0] for x in atomic_sums.values()]), np.sqrt(sum([x[1]*x[1] for x in atomic_sums.values()])) / len(atomic_sums), [ {j[0]:j[1]} for j in zip(['{:}{:}'.format(elem, sr.roman2int(x)) for x in atomic_sums], [(x[0],x[1]) for x in atomic_sums.values()]) ]
+        atomic_sums = []
+        for element in list(set([j['element'] for j in cpd])):
+            asum, asum_err, partial_list = sum_element_abundancies(element)
+            print('ICF: {:} = {:.2e} \u00B1 {:.4e}'.format(element, asum, asum_err))
+            atomic_sums += partial_list
+            print(atomic_sums)
 
     ## <-- End Looping Slits --> ##
     with open(intensities_out, 'w') as fout:

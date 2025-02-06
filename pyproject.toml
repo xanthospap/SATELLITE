@@ -24,6 +24,7 @@ dependencies = [
   'numpy',
   'astropy',
   'scipy',
+  'h5py'
 #  'PyNeb'
 ]
 
