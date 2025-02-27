@@ -13,14 +13,15 @@ import logging
 
 satellite_version = '2.r1'
 
+
 class myFormatter(argparse.ArgumentDefaultsHelpFormatter,
                   argparse.RawTextHelpFormatter):
     pass
 
+
 parser = argparse.ArgumentParser(
     formatter_class=myFormatter,
-    description=
-    'Spectroscopic Analysis Tool for intEgraL FieLd unIt daTacubEs',
+    description='Spectroscopic Analysis Tool for intEgraL FieLd unIt daTacubEs',
     epilog=('''National Observatory of Athens,
     Institute for Astronomy, Astrophysics, Space Applications and Remote Sensing\n
     Send bug reports to:
@@ -90,17 +91,20 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 # setup a logger
-    logger = satlogger.setup_logger('specific_slit', logging.DEBUG, args.log_file)
+    logger = satlogger.setup_logger(
+        'specific_slit', logging.DEBUG, args.log_file)
 
 # parse the config file
     config = cfgio.parseConfigInout(args.config)
 
 # check input FITS files
-    fits_info, missing_files = cfgio.checkInputFits(cfgio.configFitsFileList(config))
+    fits_info, missing_files = cfgio.checkInputFits(
+        cfgio.configFitsFileList(config))
     if missing_files != []:
         err = '\n'.join(missing_files)
         print("[ERROR] Missing FITS files: {:}".format(err), file=sys.stderr)
         sys.exit(1)
 
 # Specific Slit Analysis
-    specific_slit.specific_slit_analysis(fits_info, cfgio.configSpecificSlitAnalysis(config), cfgio.configElementRatiosList(config), cfgio.configDensityDiagnostics(config), cfgio.configTemperatureDiagnostics(config), args.pn_extinction, args.intensities_out, args.ratios_out, logger)
+    specific_slit.specific_slit_analysis(fits_info, cfgio.configSpecificSlitAnalysis(config), cfgio.configElementRatiosList(config), cfgio.configDensityDiagnostics(
+        config), cfgio.configTemperatureDiagnostics(config), args.pn_extinction, args.intensities_out, args.ratios_out, logger)

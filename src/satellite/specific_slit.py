@@ -19,12 +19,15 @@ def getFitsSlit(fits_fn: str, slit: dict, logger=None):
     mat = fs.loadFitsImageData(fits_fn)
     return fs.getVerticalSlit(mat, slit['y']-1, slit['x']-1, slit['w'], slit['h'], logger)
 
+
 def computeRatio(ratio: str, intensity_list: list, logger=None):
     def getIntensity(element):
         for obj in intensity_list:
             if obj['element'] == element:
                 return obj['intensity'], obj['intensity_err']
-        if logger: logger.error("Cannot find element {:} for ratio {:} in intensities list!".format(element, ratio))
+        if logger:
+            logger.error("Cannot find element {:} for ratio {:} in intensities list!".format(
+                element, ratio))
         raise RuntimeError(
             '[ERROR] Cannot find element {:} for ratio {:} in intensities list!'.format(element, ratio))
         return None, None
@@ -56,11 +59,21 @@ def extract_ion(label):
     return match.group(0) if match else None  # Return full [Ion] if found
 
 
+def err2scalar(err_array):
+    """ Define the fucntion to produce a single (i.e. scalar) error value, 
+        when we have an array of error values (i.e. from Monte-Carlo 
+        simulations.
+    """
+    if np.isnan(err_array).any():
+        print('WARNING  array contains nan! {:}'.format(err_array))
+    return np.std(err_array)
+
+
 def get_atom_model(element, ion, logger=None):
     """
     Determines whether to use pn.RecAtom() (for recombination lines)
     or pn.Atom() (for collisional excitation lines).
-    
+
     Parameters:
         element (str): The element symbol (e.g., 'He', 'O')
         ion (int): The ionization state (e.g., 1 for He I, 2 for He II)
@@ -84,6 +97,7 @@ def get_atom_model(element, ion, logger=None):
     else:
         return pn.Atom(element, ion)  # Use Atom for all other elements
 
+
 def extract_wavelength(line_id):
     """
     Convert a line identifier (e.g., 'O2_3729A') to the corresponding 'L(wavelength)' format.
@@ -96,13 +110,15 @@ def extract_wavelength(line_id):
     """
     try:
         # Extract the wavelength (everything after the last underscore)
-        wavelength = line_id.split('_')[-1].replace('A', '')  # Remove 'A' if present
+        wavelength = line_id.split(
+            '_')[-1].replace('A', '')  # Remove 'A' if present
         # Ensure the extracted value is a valid number
         if wavelength.isdigit():
             return f"L({wavelength})"
     except Exception as e:
         print(f"Error processing {line_id}: {e}")
     return None  # Return None if parsing fails
+
 
 monte_carlo_fake_obs = 3
 reference_element = {'element': 'H', 'spectrum': 'i', 'atomic': 4861}
@@ -117,16 +133,20 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
         for handler in pyneb_logger.handlers[:]:
             pyneb_logger.removeHandler(handler)
         pyneb_logger.setLevel(logger.level)
-        for handler in logger.handlers: pyneb_logger.addHandler(handler)
+        for handler in logger.handlers:
+            pyneb_logger.addHandler(handler)
         pyneb_logger.propagate = False
         # Redirect PyNeb warnings (stderr) to our logger
-        logging.captureWarnings(True)  # Redirects warnings.warn() to logging.WARNING
+        # Redirects warnings.warn() to logging.WARNING
+        logging.captureWarnings(True)
         warnings.simplefilter("always")  # Ensure all warnings are captured
         sys.stderr = sl.PyNebLogRedirector(logger, logging.WARNING)
 
     pn.log_.open_file('pyneblog.log')
 
     global_intensities = {}
+    global_ratios = {}
+    global_tene = {}
 
     def add_global_intensities(new_list, new_index):
         if new_index == 0:
@@ -136,7 +156,8 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
         else:
             for element in new_list:
                 if element['element'] not in global_intensities:
-                    logger.error("Element {:} not found in stored list at slit nr {:}".format(element['element'], new_index))
+                    logger.error("Element {:} not found in stored list at slit nr {:}".format(
+                        element['element'], new_index))
                     raise RuntimeError("[ERROR] Element {:} not found in stored list at slit nr {:}".format(
                         element['element'], new_index))
                 global_intensities[element['element']
@@ -144,14 +165,13 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
                 global_intensities[element['element']
                                    ][new_index*2+1] = element['intensity_err']
 
-    global_ratios = {}
-
     def add_global_ratio(val, err, ratio, new_index):
         if new_index == 0:
             global_ratios[ratio] = [val, err] + [np.nan]*(len(slits)-1)*2
         else:
             if ratio not in global_ratios:
-                logger.error("Element {:} not found in stored list at slit nr {:}".format(ratio, new_index))
+                logger.error(
+                    "Element {:} not found in stored list at slit nr {:}".format(ratio, new_index))
                 raise RuntimeError(
                     "[ERROR] Element {:} not found in stored list at slit nr {:}".format(ratio, new_index))
             global_ratios[ratio][new_index*2] = val
@@ -241,14 +261,16 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
             try:
                 st, sn = diags.getCrossTemDen(t, d, obs=sobs)
                 et, en = diags.getCrossTemDen(t, d, obs=eobs)
-                tene_slit_dict.append({'tene_pair': (t,d), 'sT': st, 'sN': sn, 'eT': et, 'eN': en})
-                print("PyNeb: Te {:} = {:.1f} Ne {:} = {:.2f}".format(
-                    extract_ion(t), st, extract_ion(d), sn))
+                tene_slit_dict.append(
+                    {'tene_pair': (t, d), 'sT': st, 'sN': sn, 'eT': et, 'eN': en})
+                global_tene[slit_idx] = tene_slit_dict
             except:
-                logger.info(f"Skipping Tem/Den pair {t} (Temp) ↔ {d} (Density)")
+                logger.info(
+                    f"Skipping Tem/Den pair {t} (Temp) ↔ {d} (Density)")
 
 # Ionic Abundancies
         ionic_abunndancies_dict = []
+
         def ref_tene_pair():
             for entry in tene_slit_dict:
                 if entry['tene_pair'] == ('[SIII] 6312/9069', '[ClIII] 5538/5518'):
@@ -256,42 +278,52 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
             return None
         reftene = ref_tene_pair()
         for entry in cpd:
-            pn_atom = get_atom_model(entry['element'], sr.roman2int(entry['spectrum']))
-            pn_element = sc.objectIntensityPyNebCode(entry['element'], entry['spectrum'], entry['atomic'], logger)
-            logger.debug("int_ratio={:}, tem={:}, den={:}, to_eval={:}, Hbeta={:}".format(sobs.getIntens(0)[pn_element][0], reftene['sT'], reftene['sN'], extract_wavelength(pn_element), 100.))
-            sabd = pn_atom.getIonAbundance(int_ratio=sobs.getIntens(0)[pn_element], tem=reftene['sT'], den=reftene['sN'], to_eval=extract_wavelength(pn_element), Hbeta=100.)[0]
-            eabd = pn_atom.getIonAbundance(int_ratio=eobs.getIntens(0)[pn_element], tem=reftene['eT'], den=reftene['eN'], to_eval=extract_wavelength(pn_element), Hbeta=100.)[0]
-            print('{:}+{:}({:})/H+ = {:.2e} \u00B1 {:.4e}'.format(entry['element'], sr.roman2int(entry['spectrum']), extract_wavelength(pn_element), sabd, eabd))
-            ionic_abunndancies_dict.append({'element': entry['element'], 'spectrum': entry['spectrum'], 'atomic': entry['atomic'], 'pn_element': pn_element, 'abundance': sabd, 'abundance_error': eabd})
+            pn_atom = get_atom_model(
+                entry['element'], sr.roman2int(entry['spectrum']))
+            pn_element = sc.objectIntensityPyNebCode(
+                entry['element'], entry['spectrum'], entry['atomic'], logger)
+            # logger.debug("int_ratio={:}, tem={:}, den={:}, to_eval={:}, Hbeta={:}".format(sobs.getIntens(0)[pn_element][0], reftene['sT'], reftene['sN'], extract_wavelength(pn_element), 100.))
+            sabd = pn_atom.getIonAbundance(int_ratio=sobs.getIntens(
+                0)[pn_element], tem=reftene['sT'], den=reftene['sN'], to_eval=extract_wavelength(pn_element), Hbeta=100.)[0]
+            eabd = pn_atom.getIonAbundance(int_ratio=eobs.getIntens(
+                0)[pn_element], tem=reftene['eT'], den=reftene['eN'], to_eval=extract_wavelength(pn_element), Hbeta=100.)[0]
+            # print('{:}+{:}({:})/H+ = {:.2e} \u00B1 {:.4e}'.format(entry['element'], sr.roman2int(entry['spectrum']), extract_wavelength(pn_element), sabd, eabd))
+            ionic_abunndancies_dict.append({'element': entry['element'], 'spectrum': entry['spectrum'],
+                                           'atomic': entry['atomic'], 'pn_element': pn_element, 'abundance': sabd, 'abundance_error': eabd})
 
 # ICFs
         ionic_abunndancies_sums = {}
+
         def sum_element_abundancies(elem):
             # print('Summing Abundancies for element: {:}'.format(elem))
             atomic_sums = {}
             for entry in ionic_abunndancies_dict:
                 if entry['element'] == elem:
                     spectrum = entry['spectrum']
-                    atomic   = entry['atomic']
+                    atomic = entry['atomic']
                     if spectrum != 'i':
                         if spectrum in atomic_sums:
-                            t0 = (atomic_sums[spectrum][0]+entry['abundance'])/2e0
-                            t1 = np.sqrt((atomic_sums[spectrum][1]*atomic_sums[spectrum][1] + entry['abundance_error']*entry['abundance_error']))/2e0
+                            t0 = (atomic_sums[spectrum][0] +
+                                  entry['abundance'])/2e0
+                            t1 = np.sqrt((atomic_sums[spectrum][1]*atomic_sums[spectrum]
+                                         [1] + entry['abundance_error']*entry['abundance_error']))/2e0
                             atomic_sums[spectrum] = (t0, t1)
                             # print('\tupdating {:}/{:} with value {:} of line {:}: new mean = {:}'.format(elem, spectrum, entry['abundance'], atomic, atomic_sums[spectrum]))
                         else:
-                            atomic_sums[spectrum] = (entry['abundance'], entry['abundance_error'])
+                            atomic_sums[spectrum] = (
+                                entry['abundance'], entry['abundance_error'])
                             # print('\tupdating {:}/{:} with value {:} of line {:}: new mean = {:}'.format(elem, spectrum, entry['abundance'], atomic, atomic_sums[spectrum]))
-            print(atomic_sums)
-            return sum([x[0] for x in atomic_sums.values()]), np.sqrt(sum([x[1]*x[1] for x in atomic_sums.values()])) / len(atomic_sums), [ {j[0]:j[1]} for j in zip(['{:}{:}'.format(elem, sr.roman2int(x)) for x in atomic_sums], [(x[0],x[1]) for x in atomic_sums.values()]) ]
+            # print(atomic_sums)
+            return sum([x[0] for x in atomic_sums.values()]), np.sqrt(sum([x[1]*x[1] for x in atomic_sums.values()])) / len(atomic_sums), [{j[0]: j[1]} for j in zip(['{:}{:}'.format(elem, sr.roman2int(x)) for x in atomic_sums], [(x[0], x[1]) for x in atomic_sums.values()])]
         atomic_sums = []
         for element in list(set([j['element'] for j in cpd])):
             asum, asum_err, partial_list = sum_element_abundancies(element)
-            print('ICF: {:} = {:.2e} \u00B1 {:.4e}'.format(element, asum, asum_err))
+            # print('ICF: {:} = {:.2e} \u00B1 {:.4e}'.format(element, asum, asum_err))
             atomic_sums += partial_list
-            print(atomic_sums)
+            # print(atomic_sums)
 
     ## <-- End Looping Slits --> ##
+    print(global_intensities)
     with open(intensities_out, 'w') as fout:
         for key, lst in global_intensities.items():
             print("{:<10} {:}".format(key, ' '.join(
@@ -301,5 +333,31 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
         for key, lst in global_ratios.items():
             print("{:<45} {:}".format(key, ' '.join(
                 ['{:10.4f}'.format(x) for x in lst])), file=fout)
+
+    with open('tene', 'w') as fout:
+        all_rows = []
+        for idx, elist in global_tene.items():
+            for entry in elist:
+                # each elist is in the following form:
+                # {'tene_pair': (t,d), 'sT': st, 'sN': sn, 'eT': et, 'eN': en}
+                if entry['tene_pair'] not in all_rows:
+                    all_rows.append(entry['tene_pair'])
+        print("{:45s}{:}".format('#', ''.join(["Slit {:5d}{:16s}{:26s}".format(
+            d, ' ', ' ') for d in range(len(slits))])), file=fout)
+        print("{:45s}{:11s}   {:11s} {:11s}   {:11s}".format(
+            "Te/Ne Pair", "Tempature", "", "Density", ""), file=fout)
+        print('-'*(45+26*2*len(slits)), file=fout)
+        for pair in all_rows:
+            print("{:45s}".format('/'.join(pair)), end='', file=fout)
+# value of TeNe pair (pair) for all slits ...
+            for sj in range(len(slits)):
+                elist = global_tene[sj]
+                edict = next(
+                    (item for item in elist if item["tene_pair"] == pair), None)
+# TODO handle case where edict is None!!
+                print("{:.5e} \u00B1 {:.5e} {:.5e} \u00B1 {:.5e} ".format(edict['sT'], err2scalar(
+                    edict['eT']), edict['sN'], err2scalar(edict['eN'])), end='', file=fout)
+# pair done !
+            print('', file=fout)
 
     pn.log_.close_file()

@@ -31,4 +31,19 @@
    Will the column on the right always be the same for all elements? Will it always be 
    TeSIIINeClIII?
 
+   tene_pair reference: is not standard, we input it for every FITS (modify config)
+   and use in computation
+
 4. To compute abundancies in needed to: pip install h5py
+
+5. Delete test.dat once processing is over. Rename on PID basis
+
+6. et and en (in TeNe part) are arrays; handle that
+   After looping all slits print TeNe values. er should be std. dev
+
+7. print RC.cHbeta to output_line_intensities
+
+8. ICF
+    for every element:
+        mean value of atomic_list
+    add spectrums except from spectrum==i

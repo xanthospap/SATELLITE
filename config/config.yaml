@@ -1,8 +1,4 @@
 geometry:
-  add_pixels_above: 35
-  add_pixels_below: 35
-  add_pixels_left: 4
-  add_pixels_right: 4
 data_list:
   prefix: /home/xanthos/Software/SATELLITE/data
   suffix: fit
@@ -77,14 +73,10 @@ analysis:
     slits:
       # For each slit enter: PA, width, height, xcrd, ycrd 
       # as a comma-seperated list
-      # - 79, 10, 320, 153, 106
       - 79, 8, 25, 37, 148
       - 79, 8, 21, 68, 142
       - 79, 8, 42, 104, 135
       - 79, 8, 18, 140, 128
-      # - 79, 8, 8, 169, 123
-      # - 79, 8, 46, 202, 116
-      # - 79, 8, 25, 254, 106
     log_ratios:
       - He1_5876/H1_6563
       - He1_6678/H1_6563
@@ -125,9 +117,6 @@ analysis:
       - '[OII] 3726/3729'
       - '[ClIII] 5538/5518'
       - '[ArIV] 4740/4711'
-      #- '[NeIII] 3869/3968'
-      #- '[FeIII] 4986/4658'
-      #- '[CIII] 1909/1907'
     temperature_diagnostics:
       - '[NII] 5755/6584+'
       - '[OIII] 4363/5007+'
@@ -135,5 +124,3 @@ analysis:
       - '[OI] 5577/6300'
       - '[OII] 3727+/7325+'
       - '[SIII] 6312/9069'
-      #- '[NeIII] 3869/3968+'
-      #- '[ArIII] 5192/7135'
