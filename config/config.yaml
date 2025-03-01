@@ -8,64 +8,85 @@ data_list:
   data_img_id: s
   element_list:
     - atom: H
-      spectrum: 
-        i:
-          atomic_list: 
-            - 6563
-            - 4861 
+      spectrums:
+        - spectrum: i
+          atomic_numbers:
+            - atomic_number: 6563
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
+            - atomic_number: 4861 
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
     - atom: He
-      spectrum: 
-        i:
-          atomic_list: 
-          - 5876
-          - 6678
-        ii:
-          atomic_list: 
-            - 5412
+      spectrums:
+        - spectrum: i
+          atomic_numbers: 
+            - atomic_number: 5876
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
+            - atomic_number: 6678
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
+        - spectrum: ii
+          atomic_numbers:
+            - atomic_number: 5412
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
     - atom: N
-      spectrum: 
-        i:
-          atomic_list: 
-            - 5199
-        ii:
-          atomic_list: 
-            - 5755
-            - 6548
-            - 6583
+      spectrums:
+        - spectrum: i
+          atomic_numbers:
+            - atomic_number: 5199
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
+        - spectrum: ii
+          atomic_numbers: 
+            - atomic_number: 5755
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
+            - atomic_number: 6548
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
+            - atomic_number: 6583
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
     - atom: O
-      spectrum: 
-        i:
-          atomic_list: 
-            - 6300
-        ii:
-          atomic_list: 
-            - 7320
-            - 7330
-        iii:
-          atomic_list: 
-            - 4959
-            - 5007
+      spectrums:
+        - spectrum: i
+          atomic_numbers:
+            - atomic_number: 6300
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
+        - spectrum: ii
+          atomic_numbers: 
+            - atomic_number: 7320
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
+            - atomic_number: 7330
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
+        - spectrum: iii
+          atomic_numbers: 
+            - atomic_number: 4959
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
+            - atomic_number: 5007
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
     - atom: S
-      spectrum: 
-        ii:
-          atomic_list: 
-            - 6716
-            - 6731
-        iii:
-          atomic_list: 
-            - 6312
-            - 9069
+      spectrums: 
+        - spectrum: ii
+          atomic_numbers: 
+            - atomic_number: 6716
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
+            - atomic_number: 6731
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
+        - spectrum: iii
+          atomic_numbers: 
+            - atomic_number: 6312
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
+            - atomic_number: 9069
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
     - atom: Ar
-      spectrum: 
-        iii:
-          atomic_list: 
-            - 7136
+      spectrums: 
+        - spectrum: iii
+          atomic_numbers: 
+            - atomic_number: 7136
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
     - atom: Cl
-      spectrum: 
-        iii:
-          atomic_list: 
-            - 5517
-            - 5538
+      spectrums: 
+        - spectrum: iii
+          atomic_numbers: 
+            - atomic_number: 5517
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
+            - atomic_number: 5538
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
 analysis:
   specific_slit_analysis:
     # to skip specific slit analysis set 'skip' to true
