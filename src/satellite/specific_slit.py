@@ -1,4 +1,5 @@
 import numpy as np
+import pyneb as pn
 import scipy.ndimage as nd
 import copy
 import sys
@@ -15,8 +16,6 @@ import satellite.tene as st
 import satellite.ionic_abundancies as sa
 import satellite.abundance as sb
 import satellite.icf as sf
-
-import pyneb as pn
 
 
 def getFitsSlit(fits_fn: str, slit: dict, logger=None):
@@ -101,23 +100,6 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
     global_ratios = {}
     global_tene = {}
 
-    def add_global_intensities(new_list, new_index):
-        if new_index == 0:
-            for element in new_list:
-                global_intensities[element['element']] = [
-                    element['intensity'], element['intensity_err']] + [np.nan]*(len(slits)-1)*2
-        else:
-            for element in new_list:
-                if element['element'] not in global_intensities:
-                    logger.error("Element {:} not found in stored list at slit nr {:}".format(
-                        element['element'], new_index))
-                    raise RuntimeError("[ERROR] Element {:} not found in stored list at slit nr {:}".format(
-                        element['element'], new_index))
-                global_intensities[element['element']
-                                   ][new_index*2] = element['intensity']
-                global_intensities[element['element']
-                                   ][new_index*2+1] = element['intensity_err']
-
     def add_global_ratio(val, err, ratio, new_index):
         if new_index == 0:
             global_ratios[ratio] = [val, err] + [np.nan]*(len(slits)-1)*2
@@ -150,11 +132,13 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
 
         ## <-- End Looping FITS --> ##
 
-# compile the intensities data file (for PyNeb)
+# compile the intensities data file (for PyNeb) and write the test.dat file.
+# TODO we do not need to pass the cpd list here. We can pass a more simple/small 
+# list.
         si.makeIntensitiesDataFile(cpd, reference_element, [
                                    'sslit_sum', 'eslit_sum'], 'test.dat')
 
-# PyNeb stuff
+# PyNeb stuff; PyNeb will read the 'test.dat' file (for the slit).
         sobs = pn.Observation()
         sobs.readData(
             'test.dat', fileFormat='lines_in_rows_err_cols', errIsRelative=False)
@@ -172,11 +156,12 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
 
         RC = pn.RedCorr(E_BV=sobs.extinction.E_BV[0], law=ext_law)
 
-# Compute intensity for each FITS/atom
-        add_global_intensities(si.computeIntensities(
-            fitsd, sobs, eobs, RC, reference_element, logger), slit_idx)
+# Compute intensity for each FITS/atom; add to global dictionary for printing 
+# later on.
+        global_intensities[slit_idx] = si.computeIntensities(
+            fitsd, sobs, eobs, RC, reference_element, logger)
 
-# Comptue intensity rations
+# Compute intensity ratios
         for ratio in ratios:
             try:
                 val, err, rstr = computeRatio(ratio, intensities_list)
@@ -195,13 +180,10 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
         elemspec_abundancies = sb.computeAbundancies(
             cpd, ionic_abundancies, logger)
         elem_abundancies = sf.computeIcfs(elemspec_abundancies, logger)
-        print(elem_abundancies)
 
     ## <-- End Looping Slits --> ##
-    with open(intensities_out, 'w') as fout:
-        for key, lst in global_intensities.items():
-            print("{:<10} {:}".format(key, ' '.join(
-                ['{:10.4f}'.format(x) for x in lst])), file=fout)
+    
+    si.printIntensities(global_intensities, 'koko', logger)
 
     with open(ratios_out, 'w') as fout:
         for key, lst in global_ratios.items():
