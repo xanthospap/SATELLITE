@@ -15,6 +15,8 @@ data_list:
               ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
             - atomic_number: 4861 
               ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
+            - atomic_number: 1111 
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
     - atom: He
       spectrums:
         - spectrum: i
@@ -80,6 +82,14 @@ data_list:
             - atomic_number: 7136
               ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
     - atom: Cl
+      spectrums: 
+        - spectrum: iii
+          atomic_numbers: 
+            - atomic_number: 5517
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
+            - atomic_number: 5538
+              ref_TeNe: '[SIII] 6312/9069 [ClIII] 5538/5518'
+    - atom: Xa
       spectrums: 
         - spectrum: iii
           atomic_numbers: 

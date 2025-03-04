@@ -92,8 +92,10 @@ def configSpecificSlitAnalysis(dct: dict):
 
 
 def checkInputFits(fitsd: list, logger=None):
+    fitsd_out = []
     missing_files = []
     for idx, fits in enumerate(fitsd):
+        obs_or_error_missing = False
         for ftype in ['fns', 'fne']:
             file_is_missing = False
             fitsfn = fits[ftype]
@@ -126,7 +128,9 @@ def checkInputFits(fitsd: list, logger=None):
                         file_is_missing = False
             if file_is_missing:
                 missing_files.append(fitsfn)
-    return fitsd, missing_files
+                obs_or_error_missing = True
+        if not obs_or_error_missing: fitsd_out.append(fits)
+    return fitsd_out, missing_files
 
 
 def indexOf(atom: str, spectrum: str, atomic_number: int, fitsd: list):

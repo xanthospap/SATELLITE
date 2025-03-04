@@ -78,6 +78,12 @@ parser.add_argument(
     help='Verbose mode on')
 
 parser.add_argument(
+    '--missing-fits-is-error',
+    action='store_true',
+    dest='missing_fits_is_error',
+    help='Fail with error if any of the input FITS file specified in the given config file is missing.')
+
+parser.add_argument(
     '--log',
     metavar='LOG_FILE',
     dest='log_file',
@@ -103,7 +109,8 @@ if __name__ == "__main__":
     if missing_files != []:
         err = '\n'.join(missing_files)
         print("[ERROR] Missing FITS files: {:}".format(err), file=sys.stderr)
-        sys.exit(1)
+        if args.missing_fits_is_error:
+            sys.exit(1)
 
 # Specific Slit Analysis
     specific_slit.specific_slit_analysis(fits_info, cfgio.configSpecificSlitAnalysis(config), cfgio.configElementRatiosList(config), cfgio.configDensityDiagnostics(
