@@ -7,6 +7,7 @@ from satellite import astroflux
 import satellite.roman as sr
 import satellite.cfgio as sc
 
+
 def makeIntensitiesDataFile(fitsd: list, reference_element: dict, value_keys: list, fn: str, factor=100e0):
     """ Write a relative intensities(?) data file to be used by PyNeb.
 
@@ -83,26 +84,35 @@ def computeIntensities(fitsd: dict, pnObs, pnErrObs, pnRC, reference_element: di
             fits['element'], sr.roman2int(fits['spectrum']), fits['atomic']), 'intensity': iele, 'intensity_err': err})
     return intensities_list
 
+
 def printIntensities(dict_of_intensities_list, fn, logger):
     """
     """
     element_format = 'element_pn'
+
     def searchElem(subdict, elem):
         for entry in subdict:
             if entry[element_format] == elem:
                 return entry
         return None
-    # extract all, unique elements; this is the sequence they will be 
+    # extract all, unique elements; this is the sequence they will be
     # written at
-    all_elements = list(set(d[element_format] for sublist in dict_of_intensities_list.values() for d in sublist))
+    all_elements = list(set(d[element_format]
+                        for sublist in dict_of_intensities_list.values() for d in sublist))
+    num_slits = len(dict_of_intensities_list)
     with open(fn, 'w') as fout:
+        print("{:15s}{:}".format('#', ''.join(["Slit {:5d}{:25s}".format(
+            d, ' ') for d in range(num_slits)])), file=fout)
+        print('{:}{:}'.format('#', '-'*(15-1+35*num_slits)), file=fout)
         for elem in all_elements:
             print('{:<15s}'.format(elem), end='', file=fout)
             for k, v in dict_of_intensities_list.items():
                 elem_dict_slit = searchElem(v, elem)
                 if elem_dict_slit is not None:
-                    print('{:+.9e} \u00B1 {:.9e} '.format(elem_dict_slit['intensity'], elem_dict_slit['intensity_err']), end='', file=fout)
+                    print('{:+.9e} \u00B1 {:.9e} '.format(
+                        elem_dict_slit['intensity'], elem_dict_slit['intensity_err']), end='', file=fout)
                 else:
-                    print('{>14} \u00B1 {:>14} '.format('nan', 'nan'), end='', file=fout)
+                    print('{>14} \u00B1 {:>14} '.format(
+                        'nan', 'nan'), end='', file=fout)
             print('', file=fout)
     return fn

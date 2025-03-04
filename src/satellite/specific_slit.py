@@ -62,15 +62,6 @@ def extract_ion(label):
     return match.group(0) if match else None  # Return full [Ion] if found
 
 
-def err2scalar(err_array):
-    """ Define the fucntion to produce a single (i.e. scalar) error value, 
-        when we have an array of error values (i.e. from Monte-Carlo 
-        simulations.
-    """
-    if np.isnan(err_array).any():
-        print('WARNING  array contains nan! {:}'.format(err_array))
-    return np.std(err_array)
-
 
 monte_carlo_fake_obs = 3
 reference_element = {'element': 'H', 'spectrum': 'i', 'atomic': 4861}
@@ -99,6 +90,8 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
     global_intensities = {}
     global_ratios = {}
     global_tene = {}
+    global_ionic_abundancies = {}
+    global_icfs = {}
 
     def add_global_ratio(val, err, ratio, new_index):
         if new_index == 0:
@@ -133,7 +126,7 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
         ## <-- End Looping FITS --> ##
 
 # compile the intensities data file (for PyNeb) and write the test.dat file.
-# TODO we do not need to pass the cpd list here. We can pass a more simple/small 
+# TODO we do not need to pass the cpd list here. We can pass a more simple/small
 # list.
         si.makeIntensitiesDataFile(cpd, reference_element, [
                                    'sslit_sum', 'eslit_sum'], 'test.dat')
@@ -156,7 +149,7 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
 
         RC = pn.RedCorr(E_BV=sobs.extinction.E_BV[0], law=ext_law)
 
-# Compute intensity for each FITS/atom; add to global dictionary for printing 
+# Compute intensity for each FITS/atom; add to global dictionary for printing
 # later on.
         global_intensities[slit_idx] = si.computeIntensities(
             fitsd, sobs, eobs, RC, reference_element, logger)
@@ -169,51 +162,39 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
             except:
                 logger.info("Skipping ratio {:}".format(ratio))
 
+# Compute Temperature/Density
         tene_dict = st.computeTeNePairs(
             density_diagnostics, tempterature_diagnostics, sobs, eobs, logger)
         global_tene[slit_idx] = tene_dict
 
+# Compute Ionic Abundancies
         ionic_abundancies = sa.computeIonicAbundancies(
             cpd, tene_dict, sobs, eobs, logger)
+        global_ionic_abundancies[slit_idx] = ionic_abundancies
 
 # ICFs
         elemspec_abundancies = sb.computeAbundancies(
             cpd, ionic_abundancies, logger)
         elem_abundancies = sf.computeIcfs(elemspec_abundancies, logger)
+        global_icfs[slit_idx] = elem_abundancies
 
     ## <-- End Looping Slits --> ##
-    
-    si.printIntensities(global_intensities, 'koko', logger)
 
+    # Print intensities for all elements and all slits
+    si.printIntensities(global_intensities, 'intensities.out', logger)
+
+# Print Temperature/Density
+    st.printTempDens(global_tene, 'tempdens.out', logger)
+
+    sa.printIonicAbundancies(global_ionic_abundancies, 'ionic_abundancies.out', logger)
+
+    sf.printIcfs(global_icfs, 'icfs.out', logger)
+
+    # Print ratios for all slits
     with open(ratios_out, 'w') as fout:
+        print(global_ratios)
         for key, lst in global_ratios.items():
             print("{:<45} {:}".format(key, ' '.join(
                 ['{:10.4f}'.format(x) for x in lst])), file=fout)
-
-    with open('tene', 'w') as fout:
-        all_rows = []
-        for idx, elist in global_tene.items():
-            for entry in elist:
-                # each elist is in the following form:
-                # {'tene_pair': (t,d), 'sT': st, 'sN': sn, 'eT': et, 'eN': en}
-                if entry['tene_pair'] not in all_rows:
-                    all_rows.append(entry['tene_pair'])
-        print("{:45s}{:}".format('#', ''.join(["Slit {:5d}{:16s}{:26s}".format(
-            d, ' ', ' ') for d in range(len(slits))])), file=fout)
-        print("{:45s}{:11s}   {:11s} {:11s}   {:11s}".format(
-            "Te/Ne Pair", "Tempature", "", "Density", ""), file=fout)
-        print('-'*(45+26*2*len(slits)), file=fout)
-        for pair in all_rows:
-            print("{:45s}".format('/'.join(pair)), end='', file=fout)
-# value of TeNe pair (pair) for all slits ...
-            for sj in range(len(slits)):
-                elist = global_tene[sj]
-                edict = next(
-                    (item for item in elist if item["tene_pair"] == pair), None)
-# TODO handle case where edict is None!!
-                print("{:.5e} \u00B1 {:.5e} {:.5e} \u00B1 {:.5e} ".format(edict['sT'], err2scalar(
-                    edict['eT']), edict['sN'], err2scalar(edict['eN'])), end='', file=fout)
-# pair done !
-            print('', file=fout)
 
     pn.log_.close_file()

@@ -83,3 +83,33 @@ def computeIonicAbundancies(fitsd, tene_dict, pnObs, pnErrObs, logger):
         ionic_abundancies_dict.append({'element': entry['element'], 'spectrum': entry['spectrum'],
                                        'atomic': entry['atomic'], 'pn_element': pn_element, 'abundance': sabd, 'abundance_error': eabd})
     return ionic_abundancies_dict
+
+def printIonicAbundancies(dict_of_abundancies, fn, logger):
+    element_format = 'pn_element'
+
+    def searchElem(subdict, elem):
+        for entry in subdict:
+            if entry[element_format] == elem:
+                return entry
+        return None
+    # extract all, unique elements; this is the sequence they will be
+    # written at
+    all_elements = list(set(d[element_format]
+                        for sublist in dict_of_abundancies.values() for d in sublist))
+    num_slits = len(dict_of_abundancies)
+    with open(fn, 'w') as fout:
+        print("{:15s}{:}".format('#', ''.join(["Slit {:5d}{:25s}".format(
+            d, ' ') for d in range(num_slits)])), file=fout)
+        print('{:}{:}'.format('#', '-'*(15-1+35*num_slits)), file=fout)
+        for elem in all_elements:
+            print('{:<15s}'.format(elem), end='', file=fout)
+            for k, v in dict_of_abundancies.items():
+                elem_dict_slit = searchElem(v, elem)
+                if elem_dict_slit is not None:
+                    print('{:+.9e} \u00B1 {:.9e} '.format(
+                        elem_dict_slit['abundance'], elem_dict_slit['abundance_error']), end='', file=fout)
+                else:
+                    print('{>14} \u00B1 {:>14} '.format(
+                        'nan', 'nan'), end='', file=fout)
+            print('', file=fout)
+    return fn

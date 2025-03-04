@@ -1,21 +1,26 @@
 import logging
 import sys
 
+
 class PyNebLogRedirector:
     """Redirects only PyNeb's stderr output to the logger while keeping the rest in stderr."""
+
     def __init__(self, logger, level=logging.WARNING):
         self.logger = logger
         self.level = level
         self.stderr = sys.stderr  # Store original stderr
 
     def write(self, message):
-        if ("pyneb" in message.lower()) or (message.lower().startswith("warng")):  # Only capture PyNeb messages
+        # Only capture PyNeb messages
+        if ("pyneb" in message.lower()) or (message.lower().startswith("warng")):
             self.logger.log(self.level, message.strip())
         else:
-            self.stderr.write(message)  # Pass non-PyNeb messages to original stderr
+            # Pass non-PyNeb messages to original stderr
+            self.stderr.write(message)
 
     def flush(self):  # Needed for compatibility with sys.stderr
         self.stderr.flush()
+
 
 def setup_logger(name: str, log_type=logging.INFO, log_to_file=None):
     """
