@@ -157,7 +157,7 @@ def specific_slit_analysis(fitsd: list, slits: list, ratios: list, density_diagn
 # Compute intensity ratios
         for ratio in ratios:
             try:
-                val, err, rstr = computeRatio(ratio, intensities_list)
+                val, err, rstr = computeRatio(ratio, global_intensities[slit_idx])
                 add_global_ratio(val, err, rstr, slit_idx)
             except:
                 logger.info("Skipping ratio {:}".format(ratio))

@@ -84,6 +84,7 @@ def computeIcfs(abundancies, logger):
     # Reduce it only hold abundancies values (i.e. drop the errors)
     abundancies = {a[0]: a[1][0] for a in abundancies.items()}
     # get list of unique elements, assuming keys in abundancies are of type e.g. 'O3'
+    # print(abundancies)
     for element in list(set([re.match(r"([A-Za-z]+)([0-9]?)", x)[1] for x in abundancies])):
         if element not in ['H', 'He']:
             # get the entry of icf_dict for the element
@@ -95,6 +96,7 @@ def computeIcfs(abundancies, logger):
                     # print(abundancies,
                     icfs_element_dict.update(icf.getElemAbundance(
                         abundancies, icf_list=kb['name']))
+                    # print('icf.getElemAbundance(abundancies, icf_list={:})'.format(kb['name']))
             for kb in entry['dims']:
                 if kb['cond'](abundancies):
                     icfs_element_dict.update(icf.getElemAbundance(
@@ -103,29 +105,36 @@ def computeIcfs(abundancies, logger):
     return ret
 
 def printIcfs(dict_of_icfs, fn, logger):
-    # Extract all unique combinations of inner keys
+   # Extract all unique combinations of inner keys
     inner_combinations = set()
     for outer_dict in dict_of_icfs.values():
         for key, sub_dict in outer_dict.items():
             for inner_key in sub_dict.keys():
                 inner_combinations.add((key, inner_key))
-    
+
     # Sort the combinations for a consistent output
     inner_combinations = sorted(inner_combinations)
-    
+
+    # Get all outermost keys dynamically
+    outer_keys = sorted(dict_of_icfs.keys())
+
     with open(fn, 'w') as fout:
+
         # Print header
-        headers = ["#Slit "] + list(dict_of_icfs.keys())
-        print("{:<20} {:>13} {:>13} {:>13} {:>13}".format(*headers), file=fout)
-        
+        headers = ["#"] + [f"Slit {key}" for key in outer_keys]
+        header_format = "{:<20}" + " {:>13}" * len(outer_keys)
+        print(header_format.format(*headers), file=fout)
+
         # Print each row
         for key, inner_key in inner_combinations:
             row = [f"{key}_{inner_key}"]
-            for outer_key in dict_of_icfs.keys():
+            for outer_key in outer_keys:
+                # Access value or use nan if not present
                 value = dict_of_icfs[outer_key].get(key, {}).get(inner_key, np.nan)
                 if np.isnan(value):
                     row.append("nan")
                 else:
                     row.append("{:13.12e}".format(value))
-            print("{:<20} {:>13} {:>13} {:>13} {:>13}".format(*row), file=fout)
-    return fn
+
+            # Print row with dynamic column count
+            print(header_format.format(*row), file=fout)
