@@ -2,7 +2,6 @@ import numpy as np
 import pyneb as pn
 import satellite.roman as sr
 
-
 def sum_element_abundancies(element, ionic_abundancies):
     atomic_sums = {}
     for entry in ionic_abundancies:

@@ -11,7 +11,8 @@ def err2scalar(err_array):
     return np.std(err_array)
 
 
-def computeTeNePairs(density_diagnostics: list, tempterature_diagnostics: list, pnObs, pnErrObs, logger):
+def computeTeNePairs_obsolete(density_diagnostics: list, tempterature_diagnostics: list, pnObs, pnErrObs, logger):
+    print("--------------------------------------------------------computeTeNePairs-start");
     diags = pn.Diagnostics()
     # Register all diagnostics with PyNeb
     diags.addDiag(density_diagnostics+tempterature_diagnostics)
@@ -22,6 +23,9 @@ def computeTeNePairs(density_diagnostics: list, tempterature_diagnostics: list, 
     valid_dens = [d for d in density_diagnostics if d in all_diags]
     # Automatically generate valid (temperature, density) pairs
     valid_pairs = [(t, d) for t in valid_temp for d in valid_dens]
+    print('Temperature Diagnostics: {:}'.format(valid_temp))
+    print('Density     Diagnostics: {:}'.format(valid_dens))
+    print('Valid       Diagnostics: {:}'.format(valid_pairs))
     # Iterate valid pairs and add results to dictionary
     tene_slit_dict = []
     for t, d in valid_pairs:
@@ -34,6 +38,24 @@ def computeTeNePairs(density_diagnostics: list, tempterature_diagnostics: list, 
         except:
             logger.info(
                 f"Skipping Tem/Den pair {t} (Temp) ↔ {d} (Density)")
+    print("--------------------------------------------------------computeTeNePairs-stop");
+    return tene_slit_dict
+
+def computeTeNePairs(density_diagnostics: list, tempterature_diagnostics: list, pnObs, pnErrObs, logger):
+    print("--------------------------------------------------------computeTeNePairs-start");
+    diags = pn.Diagnostics()
+    tene_slit_dict = []
+    for td in tempterature_diagnostics:
+        for dd in density_diagnostics:
+            try:
+                st, sn = diags.getCrossTemDen(td, dd, obs=pnObs)
+                et, en = diags.getCrossTemDen(td, dd, obs=pnErrObs)
+                tene_slit_dict.append(
+                    {'tene_pair': (td, dd), 'sT': st, 'sN': sn, 'eT': et, 'eN': en})
+            except:
+                logger.info(
+                    f"Skipping Tem/Den pair {td} (Temp) ↔ {dd} (Density)")
+    print("--------------------------------------------------------computeTeNePairs-stop");
     return tene_slit_dict
 
 def printTempDens(dict_of_tene, fn, logger):
