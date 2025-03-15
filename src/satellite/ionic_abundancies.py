@@ -3,6 +3,7 @@ import pyneb as pn
 
 import satellite.cfgio as sc
 import satellite.roman as sr
+import satellite.nomenclature as sn
 
 
 def extract_wavelength(line_id):
@@ -72,7 +73,7 @@ def computeIonicAbundancies(fitsd, tene_dict, pnObs, pnErrObs, logger):
             return
         pn_atom = get_atom_model(
             entry['element'], sr.roman2int(entry['spectrum']))
-        pn_element = sc.objectIntensityPyNebCode(
+        pn_element = sn.objectIntensityPyNebCode(
             entry['element'], entry['spectrum'], entry['atomic'], logger)
         # logger.debug("int_ratio={:}, tem={:}, den={:}, to_eval={:}, Hbeta={:}".format(sobs.getIntens(0)[pn_element][0], reftene['sT'], reftene['sN'], extract_wavelength(pn_element), 100.))
         sabd = pn_atom.getIonAbundance(int_ratio=pnObs.getIntens(

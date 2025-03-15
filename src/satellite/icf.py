@@ -2,35 +2,66 @@ import re
 import pyneb as pn
 import numpy as np
 import satellite.roman as sr
-
+from typing import Union
 
 def ctrue(*args): return True
 
 
-def omega(elemspec_abundancies):
+def omega(elemspec_abundancies: dict) -> float:
+    """ Compute Omega value, relevant for ICF checking:
+        Omega = O2+ / (O+ + O2+)
+
+        Parameters
+        ----------
+        elemspec_abundancies: dict
+            A dictionary that should include the required values, as:
+            O+  : 'O2'
+            O2+ : 'O3'
+
+        Return
+        ------
+        float:
+            The value of Omega
+    """
     return elemspec_abundancies['O3'] / (elemspec_abundancies['O2'] + elemspec_abundancies['O3'])
 
 
-def U(elemspec_abundancies):
+def U(elemspec_abundancies: dict) -> float:
+    """ Compute U value, relevant for ICF checking:
+        U = He2+ / (He+ + He2+)
+        
+        Parameters
+        ----------
+        elemspec_abundancies: dict
+            A dictionary that should include the required values, as:
+            He+  : 'He2'
+            He2+ : 'He3'
+
+        Return
+        ------
+        float:
+            The value of U
+    """
     return elemspec_abundancies['He3'] / (elemspec_abundancies['He2'] + elemspec_abundancies['He3'])
 
 
-def omega1435(ea): return omega(ea) <= .5
-def omega1436(ea): return omega(ea) > .5
-def omega1414(ea): return omega(ea) <= .95
-def omega1414b(ea): return omega(ea) > .95
-def omega1429b(ea): return omega(ea) > .02 and omega(ea) < .95
-def omega1432(ea): return omega(ea) > .95
-def u1417c(ea): return U(ea) < .015
+def omega1435 (ea: dict) -> float: return omega(ea) <= .5
+def omega1436 (ea: dict) -> float: return omega(ea) > .5
+def omega1414 (ea: dict) -> float: return omega(ea) <= .95
+def omega1414b(ea: dict) -> float: return omega(ea) > .95
+def omega1429b(ea: dict) -> float: return omega(ea) > .02 and omega(ea) < .95
+def omega1432 (ea: dict) -> float: return omega(ea) > .95
+def u1417c    (ea: dict) -> float: return U(ea) < .015
 
 
+""" Spectrum notation to abundance/Ionic notation """
 elemspec2ionstr_dict = {
-    'HeI': 'He+',
+    'HeI':  'He+',
     'HeII': 'He2+',
-    'HI': 'H+',
-    'NI': 'N0',
-    'NII': 'N+',
-    'OI': 'O0',
+    'HI':   'H+',
+    'NI':   'N0',
+    'NII':  'N+',
+    'OI':  'O0',
     'OII': 'O+',
     'OIII': 'O2+',
     'SII': 'S+',
@@ -49,7 +80,7 @@ elemspec2ionstr_dict = {
 }
 
 
-def elemspec2ionstr(element, spectrum):
+def elemspec2ionstr(element: str, spectrum: Union[int, str]) -> str:
     """ This function actually applies the dictionary elemspec2ionstr_dict.
         Given an element and a spectrum, we construct a (possible) key entry 
         of the dictionary, and return the corresponding value.
@@ -72,18 +103,11 @@ def elemspec2ionstr(element, spectrum):
         >>> elemspec2ionstr('He', 1)     -> 'He+'
         >>> elemspec2ionstr('Fe', 'iii') -> 'Fe2+'
     """
-    # if spectrum is an int, turn it to a roman letter
-    # print('elemspec2ionstr got {:} and {:}'.format(element, spectrum.upper()))
     try:
-        # print('\ttrying int spectrum ...')
         int(spectrum)
-        # print('\tint ok ...')
         spectrum = sr.int2roman(int(spectrum))
-        # print('\tint2roman ok ...')
     except:
         pass
-    print('Note: {:}{:} -> {:}'.format(element, spectrum,
-          elemspec2ionstr_dict['{:}{:}'.format(element, spectrum.upper())]))
     return elemspec2ionstr_dict['{:}{:}'.format(element, spectrum.upper())]
 
 
@@ -108,17 +132,15 @@ def ionstr2pyneb(ion):
         return g[1]
     except:
         pass
-    # print('-->matching [{:}]'.format(ion))
     g = re.match(r'([A-Za-z]+)([0-9]?)\+', ion)
     try:
-        print('Note {:} -> {:}'.format(ion,
-              g[1] + (str(int(g[2])+1) if g[2] != '' else '2')))
         return g[1] + (str(int(g[2])+1) if g[2] != '' else '2')
     except:
         raise RuntimeError(
             'ERROR Failed transforming Ion {:} to PyNeb string'.format(ion))
 
-
+""" A dictionary holding all ICFs/DIMS that may be computed, organized by element.
+"""
 icf_dict = {
     'Ar': {'kb': [{'name': 'KB94_A32', 'cond': ctrue}, {'name': 'KB94_A30.10', 'cond': ctrue}], 'dims': [{'name': 'DIMS14_35', 'cond': omega1435}, {'name': 'DIMS14_36', 'cond': omega1436}]},
     'N': {'kb': [{'name': 'KB94_A1.10', 'cond': ctrue}], 'dims': [{'name': 'DIMS14_14', 'cond': omega1414}, {'name': 'DIMS14_14b', 'cond': omega1414b}]},
@@ -130,15 +152,31 @@ icf_dict = {
     'Fe': {'kb': [{'name': 'RR05_2', 'cond': ctrue}, {'name': 'RR05_3', 'cond': ctrue}, {'name': 'RR05_4', 'cond': ctrue}], 'dims': []}
 }
 
-def IcfNameList():
-    """ Return a list with all values 'name' from the icf_dict dictionary.
+def IcfNameList() -> list:
+    """ Return a list with all values of 'name' keys, from the 
+        icf_dict dictionary.
     """
     return [entry['name'] for element in icf_dict.values() for section in element.values() for entry in section]
 
 
-def renameIons(abundancies):
-    acopy = {}
+def renameIons(abundancies: dict) -> dict:
+    """ Returns a copy of the input dictionary where the the keys are changed 
+        accroding to the transformation:
+        key -> elemspec2ionstr() -> ionstr2pyneb() -> new_key
 
+        Note
+        ----
+        This transformation makes sure that the following key renamings are 
+        applied:
+            HeI  -> becomes -> He2
+            HeII -> becomes -> He3
+
+        Parameters
+        ----------
+        abundancies: dict
+            A dictionary where keys are elements, (e.g. 'HeI', 'OII', 
+    """
+    acopy = {}
     def es_split(elemsp):
         g = re.match(r"([A-Za-z]+)([0-9]?)", elemsp)
         return g[1], g[2]
@@ -148,56 +186,11 @@ def renameIons(abundancies):
               ionstr2pyneb(elemspec2ionstr(*es_split(k)))))
     return acopy
 
-
 def computeIcfs(abundancies, logger):
-    # Returned dictionary, in the form:
-    # {
-    # 'Ne': {'KB94_A28.10': val, 'DIMS14_17a': val, ...},
-    # 'Fe': { ...}
-    # }
-    ret = {}
-    # Initialize PyNeb's ICF
     icf = pn.ICF()
     allIcf = icf.getElemAbundance(renameIons({a[0]: a[1][0] for a in abundancies.items()}), IcfNameList())
-    print(allIcf)  
+    # print(allIcf)  
     return allIcf
-
-def computeIcfs_obsolete(abundancies, logger):
-    # Returned dictionary, in the form:
-    # {
-    # 'Ne': {'KB94_A28.10': val, 'DIMS14_17a': val, ...},
-    # 'Fe': { ...}
-    # }
-    ret = {}
-    # Initialize PyNeb's ICF
-    icf = pn.ICF()
-    # abundancies holds values pairs of values, like 'O2': (1e-2, 1e-3)
-    # Reduce it only hold abundancies values (i.e. drop the errors)
-    abundancies = renameIons({a[0]: a[1][0] for a in abundancies.items()})
-    print('----------+++Abundancies={:}'.format(abundancies))
-    # get list of unique elements, assuming keys in abundancies are of type e.g. 'O3'
-    # print(abundancies)
-    # if element in list(set([re.match(r"([A-Za-z]+)([0-9]?)", x)[1] for x in abundancies])):
-    for element in ['O', 'N', 'Ne', 'S', 'Cl', 'Ar', 'C']:
-        if element not in ['H', 'He']:
-            # get the entry of icf_dict for the element
-            entry = icf_dict[element]
-            icfs_element_dict = {}
-            # compute abundancy from KBs
-            for kb in entry['kb']:
-                if kb['cond'](abundancies):
-                    print(
-                        "icf.getElemAbundance(abundancies, icf_list={:}".format(kb['name']))
-                    icfs_element_dict.update(icf.getElemAbundance(
-                        abundancies, icf_list=kb['name']))
-                    # print('icf.getElemAbundance(abundancies, icf_list={:})'.format(kb['name']))
-            for kb in entry['dims']:
-                if kb['cond'](abundancies):
-                    icfs_element_dict.update(icf.getElemAbundance(
-                        abundancies, icf_list=kb['name']))
-            ret[element] = icfs_element_dict
-    return ret
-
 
 def printIcfs(dict_of_icfs, fn, logger):
    # Extract all unique combinations of inner keys
