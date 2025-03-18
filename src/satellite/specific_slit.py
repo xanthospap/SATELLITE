@@ -82,6 +82,7 @@ def specific_slit_analysis(
     density_diagnostics: list,
     tempterature_diagnostics: list,
     ext_law: str,
+    pn_atomic_data: str,
     intensities_out: str,
     ratios_out: str,
     logger,
@@ -92,6 +93,21 @@ def specific_slit_analysis(
         err_msg = "ERROR. Invalid extinction given: {:} ".format(ext_law)
         print(err_msg, file=sys.stderr)
         raise RuntimeError(err_msg)
+
+    # check that the atomic data set is valid
+    if pn_atomic_data not in pn.atomicData.getPredefinedDataFileDict().keys():
+        err_msg = "ERROR. Invalid PyNeb atomic data set: {:} ".format(pn_atomic_data)
+        print(err_msg, file=sys.stderr)
+        raise RuntimeError(err_msg)
+    # (at least!) some of the default atomic data sets cannot be loaded unless we
+    # include a 'deprecated' path.
+    pn.atomicData.includeDeprecatedPath()
+    try:
+        pn.atomicData.setDataFileDict(pn_atomic_data)
+    except:
+        # if the error persists, also try this include ...
+        pn.atomicData.includeFitsPath()
+        pn.atomicData.setDataFileDict(pn_atomic_data)
 
     # attach PyNeb's logger to our, if we have one!
     if logger:

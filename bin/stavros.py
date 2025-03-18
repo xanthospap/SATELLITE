@@ -46,7 +46,7 @@ parser.add_argument(
     "-a",
     "--atomic-data-set",
     metavar="ATOMIC_DATA_SET",
-    dest="pn_atomics",
+    dest="pn_atomic_data",
     default="PYNEB_21_01",
     required=False,
     help="Predefined atomic data set provided by PyNeb. For a complete list, see https://github.com/Morisset/PyNeb_devel/blob/master/docs/Notebooks/PyNeb_manual_3.ipynb",
@@ -54,7 +54,7 @@ parser.add_argument(
 
 parser.add_argument(
     "-e",
-    "--extinction",
+    "--extinction-law",
     metavar="PN_extinction",
     dest="pn_extinction",
     default="S79 H83 CCM89",
@@ -127,6 +127,7 @@ if __name__ == "__main__":
         cfgio.configDensityDiagnostics(config),
         cfgio.configTemperatureDiagnostics(config),
         args.pn_extinction,
+        args.pn_atomic_data,
         args.intensities_out,
         args.ratios_out,
         logger,
