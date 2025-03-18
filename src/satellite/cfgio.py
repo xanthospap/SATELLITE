@@ -138,8 +138,6 @@ def indexOf(atom: str, spectrum: str, atomic_number: int, fitsd: list):
             return idx
     return -1
 
-
-
 def partialResolve(pstr: str):
     lstpl = []
     lst = []

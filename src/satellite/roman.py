@@ -1,4 +1,17 @@
-def roman2int(roman_str):
+def roman2int(roman_str: str) -> int:
+    """ Transform a numeric value from roman to int.
+
+        Parameters
+        ----------
+        roman_str: str
+            A numeric value in roman notation (e.g. 'i', 'iv', 'II').
+            Can be upper or lower case.
+        
+        Return
+        ------
+        int:
+
+    """
     roman_str = roman_str.upper()
     roman = {'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500,
              'M': 1000, 'IV': 4, 'IX': 9, 'XL': 40, 'XC': 90, 'CD': 400, 'CM': 900}
