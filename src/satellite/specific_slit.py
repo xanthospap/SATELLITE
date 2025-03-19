@@ -71,7 +71,6 @@ def extract_ion(label):
     return match.group(0) if match else None  # Return full [Ion] if found
 
 
-# monte_carlo_fake_obs = 3
 reference_element = {"element": "H", "spectrum": "i", "atomic": 4861}
 
 
@@ -214,7 +213,9 @@ def specific_slit_analysis(
         # Compute intensity ratios
         for ratio in ratios:
             try:
-                val, err, rstr = computeRatio(ratio, global_intensities[slit_idx])
+                val, err, rstr = computeRatio(
+                    ratio, global_intensities[slit_idx]["intensities"]
+                )
                 add_global_ratio(val, err, rstr, slit_idx)
             except:
                 logger.info("Skipping ratio {:}".format(ratio))
@@ -245,7 +246,6 @@ def specific_slit_analysis(
 
     # Print ratios for all slits
     with open(ratios_out, "w") as fout:
-        print(global_ratios)
         for key, lst in global_ratios.items():
             print(
                 "{:<45} {:}".format(key, " ".join(["{:10.4f}".format(x) for x in lst])),
