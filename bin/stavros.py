@@ -101,6 +101,15 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--abundances-out",
+    metavar="IONIC_ABUNDANCIES_OUTPUT_FILE",
+    dest="abundancies_out",
+    default="abundancies.dat",
+    required=False,
+    help="Output file to write computed ionic abundancies results.",
+)
+
+parser.add_argument(
     "--verbose", action="store_true", dest="verbose", help="Verbose mode on"
 )
 
@@ -152,5 +161,6 @@ if __name__ == "__main__":
         args.intensities_out,
         args.ratios_out,
         args.diagnostics_out,
+        args.abundancies_out,
         logger,
     )

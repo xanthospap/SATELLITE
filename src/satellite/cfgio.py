@@ -189,19 +189,3 @@ def configDensityDiagnostics(dct: dict):
 
 def configTemperatureDiagnostics(dct: dict):
     return dct["analysis"]["specific_slit_analysis"]["temperature_diagnostics"]
-
-
-def configRefTenNe2PyNebPair(ref_tene):
-    """
-    Example:
-        ref_tene="[SIII] 6312/9069 [ClIII] 5538/5518"
-    Return:
-        "[SIII] 6312/9069", "[ClIII] 5538/5518"
-    """
-    match = re.match(
-        r"\[([A-Za-z0-9]*)\]\s*([0-9a-zA-Z\+]*[/0-9a-zA-Z\+]*)\s*\[([A-Za-z0-9]*)\]\s*([0-9a-zA-Z\+]*[/0-9a-zA-Z\+]*)",
-        ref_tene,
-    )
-    return "[{:}] {:}".format(match.group(1), match.group(2)), "[{:}] {:}".format(
-        match.group(3), match.group(4)
-    )

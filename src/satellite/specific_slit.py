@@ -51,6 +51,7 @@ def specific_slit_analysis(
     intensities_out: str,
     ratios_out: str,
     diagnostics_out: str,
+    abundancies_out: str,
     logger,
 ):
 
@@ -174,13 +175,14 @@ def specific_slit_analysis(
         )
 
         # Compute Ionic Abundancies
-        ionic_abundancies = sa.computeIonicAbundancies(
+        global_ionic_abundancies[slit_idx] = sa.computeIonicAbundancies(
             cpd, global_tene[slit_idx], sobs, eobs, logger
         )
-        global_ionic_abundancies[slit_idx] = ionic_abundancies
 
         # ICFs
-        elemspec_abundancies = sb.computeAbundancies(cpd, ionic_abundancies, logger)
+        elemspec_abundancies = sb.computeAbundancies(
+            cpd, global_ionic_abundancies[slit_idx], logger
+        )
         elem_abundancies = sf.computeIcfs(elemspec_abundancies, logger)
         global_icfs[slit_idx] = elem_abundancies
 
@@ -189,7 +191,7 @@ def specific_slit_analysis(
     si.printIntensities(global_intensities, intensities_out, logger)
     so.printRatios(global_ratios, ratios_out, logger)
     st.printDiagnostics(global_tene, diagnostics_out, logger)
-    sa.printIonicAbundancies(global_ionic_abundancies, "ionic_abundancies.out", logger)
+    sa.printIonicAbundancies(global_ionic_abundancies, abundancies_out, logger)
     sf.printIcfs(global_icfs, "icfs.out", logger)
 
     pn.log_.close_file()

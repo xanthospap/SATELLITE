@@ -11,3 +11,4 @@ Version 1.1b1
     - [x] New output for line intensities (line_intensities.dat).
     - [x] New output for line ratios (line_ratios.dat).
     - [x] Computation of Temperature/Density diagnostics changed. User supplied list is flitered based on observation set. This removes excess work and Pyneb warnings.
+    - [x] New output for ionic abundancies (abundancies.dat) 
