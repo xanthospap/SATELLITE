@@ -63,6 +63,17 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "-m",
+    "--monte-carlo-simulations",
+    metavar="MONTE_CARLO_FAKE_OBS",
+    dest="monte_carlo_fake_obs",
+    type=int,
+    default=4,
+    required=False,
+    help="Number of Mone-Carlo fake observations for error estimation.",
+)
+
+parser.add_argument(
     "--intensities-out",
     metavar="INTENSITIES_OUTPUT_FILE",
     dest="intensities_out",
@@ -128,6 +139,7 @@ if __name__ == "__main__":
         cfgio.configTemperatureDiagnostics(config),
         args.pn_extinction,
         args.pn_atomic_data,
+        args.monte_carlo_fake_obs,
         args.intensities_out,
         args.ratios_out,
         logger,

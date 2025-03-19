@@ -6,3 +6,4 @@ Version 1.1b1
     - [x] All output files are now printed sorted alphabeticaly
     - [ ] Print F(Hb): **where?**
     - [x] Allow changing of atomic data file; can be done via command line: e.g. as -a 'PYNEB_23_01' or --atomic-data-set='PYNEB_23_01'
+    - [x] Allow setting number of monte carlo simulatnios via command line: e.g. as -m 12 or --monte-carlo-simulations=12

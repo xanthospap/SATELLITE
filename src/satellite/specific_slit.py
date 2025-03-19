@@ -71,7 +71,7 @@ def extract_ion(label):
     return match.group(0) if match else None  # Return full [Ion] if found
 
 
-monte_carlo_fake_obs = 3
+# monte_carlo_fake_obs = 3
 reference_element = {"element": "H", "spectrum": "i", "atomic": 4861}
 
 
@@ -83,6 +83,7 @@ def specific_slit_analysis(
     tempterature_diagnostics: list,
     ext_law: str,
     pn_atomic_data: str,
+    monte_carlo_fake_obs: int,
     intensities_out: str,
     ratios_out: str,
     logger,
