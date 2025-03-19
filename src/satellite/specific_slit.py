@@ -52,6 +52,7 @@ def specific_slit_analysis(
     ratios_out: str,
     diagnostics_out: str,
     abundancies_out: str,
+    total_abundancies_out: str,
     logger,
 ):
 
@@ -99,10 +100,13 @@ def specific_slit_analysis(
     global_ratios = {}
     global_tene = {}
     global_ionic_abundancies = {}
+    global_element_abundancies = {}
     global_icfs = {}
 
     # for every slit
     for slit_idx, slit in enumerate(slits):
+        print("Processing slit {:d}/{:d}".format(slit_idx + 1, len(slits)))
+
         # copy of dictionary
         cpd = copy.deepcopy(fitsd)
 
@@ -179,19 +183,26 @@ def specific_slit_analysis(
             cpd, global_tene[slit_idx], sobs, eobs, logger
         )
 
-        # ICFs
+        # ICFs & DIMS
         elemspec_abundancies = sb.computeAbundancies(
             cpd, global_ionic_abundancies[slit_idx], logger
         )
-        elem_abundancies = sf.computeIcfs(elemspec_abundancies, logger)
-        global_icfs[slit_idx] = elem_abundancies
+        # print("-----------------------------------------------------------")
+        # print(elemspec_abundancies)
+        # print("-----------------------------------------------------------")
+        global_icfs[slit_idx] = sf.computeIcfs(elemspec_abundancies, logger)
+        global_element_abundancies[slit_idx] = sf.ionicAbundance2elementAbundance(
+            elemspec_abundancies, logger
+        )
 
     ## <-- End Looping Slits --> ##
 
+    print("All slits done ... writing files ...")
     si.printIntensities(global_intensities, intensities_out, logger)
     so.printRatios(global_ratios, ratios_out, logger)
     st.printDiagnostics(global_tene, diagnostics_out, logger)
     sa.printIonicAbundancies(global_ionic_abundancies, abundancies_out, logger)
-    sf.printIcfs(global_icfs, "icfs.out", logger)
+    sf.printIcfs(global_icfs, global_element_abundancies, total_abundancies_out, logger)
 
+    print("All done!")
     pn.log_.close_file()

@@ -110,6 +110,15 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--total-abundances-out",
+    metavar="TOTAL_ABUNDANCIES_OUTPUT_FILE",
+    dest="total_abundancies_out",
+    default="total_abundancies.dat",
+    required=False,
+    help="Output file to write computed total abundancies, including ICFs and DIMSs.",
+)
+
+parser.add_argument(
     "--verbose", action="store_true", dest="verbose", help="Verbose mode on"
 )
 
@@ -144,7 +153,7 @@ if __name__ == "__main__":
     fits_info, missing_files = cfgio.checkInputFits(cfgio.configFitsFileList(config))
     if missing_files != []:
         err = "\n".join(missing_files)
-        print("[ERROR] Missing FITS files: {:}".format(err), file=sys.stderr)
+        logger.warning("Missing FITS files: {:}".format(err))
         if args.missing_fits_is_error:
             sys.exit(1)
 
@@ -162,5 +171,6 @@ if __name__ == "__main__":
         args.ratios_out,
         args.diagnostics_out,
         args.abundancies_out,
+        args.total_abundancies_out,
         logger,
     )
