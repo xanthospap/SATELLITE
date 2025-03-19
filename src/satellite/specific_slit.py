@@ -16,6 +16,7 @@ import satellite.tene as st
 import satellite.ionic_abundancies as sa
 import satellite.abundance as sb
 import satellite.icf as sf
+import satellite.ratios as so
 
 
 def getFitsSlit(fits_fn: str, slit: dict, logger=None):
@@ -23,42 +24,6 @@ def getFitsSlit(fits_fn: str, slit: dict, logger=None):
     return fs.getVerticalSlit(
         mat, slit["y"] - 1, slit["x"] - 1, slit["w"], slit["h"], logger
     )
-
-
-def computeRatio(ratio: str, intensity_list: list, logger=None):
-    def getIntensity(element):
-        for obj in intensity_list:
-            if obj["element"] == element:
-                return obj["intensity"], obj["intensity_err"]
-        if logger:
-            logger.error(
-                "Cannot find element {:} for ratio {:} in intensities list!".format(
-                    element, ratio
-                )
-            )
-        raise RuntimeError(
-            "[ERROR] Cannot find element {:} for ratio {:} in intensities list!".format(
-                element, ratio
-            )
-        )
-        return None, None
-
-    ar, par = sc.resolveRatioStr(ratio)
-    var = 0e0
-    vpar = 0e0
-    par1 = 0e0
-    par2 = 0e0
-    for idx in range(1, len(ar), 2):
-        # val, err = getIntensity(sc.satellite_str2pyneb_str(ar[idx]))
-        val, err = getIntensity(ar[idx])
-        var += ar[idx - 1] * val
-        par1 += ar[idx - 1] * (err / val * np.log(10))
-    for idx in range(1, len(par), 2):
-        # val, err = getIntensity(sc.satellite_str2pyneb_str(par[idx]))
-        val, err = getIntensity(par[idx])
-        vpar += par[idx - 1] * val
-        par2 += par[idx - 1] * (err / val * np.log(10))
-    return var / vpar, np.sqrt(par1**2 + par2**2), ratio
 
 
 def extract_ion(label):
@@ -85,6 +50,7 @@ def specific_slit_analysis(
     monte_carlo_fake_obs: int,
     intensities_out: str,
     ratios_out: str,
+    diagnostics_out: str,
     logger,
 ):
 
@@ -133,24 +99,6 @@ def specific_slit_analysis(
     global_tene = {}
     global_ionic_abundancies = {}
     global_icfs = {}
-
-    def add_global_ratio(val, err, ratio, new_index):
-        if new_index == 0:
-            global_ratios[ratio] = [val, err] + [np.nan] * (len(slits) - 1) * 2
-        else:
-            if ratio not in global_ratios:
-                logger.error(
-                    "Element {:} not found in stored list at slit nr {:}".format(
-                        ratio, new_index
-                    )
-                )
-                raise RuntimeError(
-                    "[ERROR] Element {:} not found in stored list at slit nr {:}".format(
-                        ratio, new_index
-                    )
-                )
-            global_ratios[ratio][new_index * 2] = val
-            global_ratios[ratio][new_index * 2 + 1] = err
 
     # for every slit
     for slit_idx, slit in enumerate(slits):
@@ -211,24 +159,23 @@ def specific_slit_analysis(
         }
 
         # Compute intensity ratios
+        global_ratios[slit_idx] = {}
         for ratio in ratios:
             try:
-                val, err, rstr = computeRatio(
+                global_ratios[slit_idx][ratio] = so.computeRatio(
                     ratio, global_intensities[slit_idx]["intensities"]
                 )
-                add_global_ratio(val, err, rstr, slit_idx)
             except:
                 logger.info("Skipping ratio {:}".format(ratio))
 
-        # Compute Temperature/Density
-        tene_dict = st.computeTeNePairs(
+        # Compute diagnostics (te/ne pairs)
+        global_tene[slit_idx] = st.computeTeNePairs(
             density_diagnostics, tempterature_diagnostics, sobs, eobs, logger
         )
-        global_tene[slit_idx] = tene_dict
 
         # Compute Ionic Abundancies
         ionic_abundancies = sa.computeIonicAbundancies(
-            cpd, tene_dict, sobs, eobs, logger
+            cpd, global_tene[slit_idx], sobs, eobs, logger
         )
         global_ionic_abundancies[slit_idx] = ionic_abundancies
 
@@ -240,16 +187,9 @@ def specific_slit_analysis(
     ## <-- End Looping Slits --> ##
 
     si.printIntensities(global_intensities, intensities_out, logger)
-    st.printTempDens(global_tene, "tempdens.out", logger)
+    so.printRatios(global_ratios, ratios_out, logger)
+    st.printDiagnostics(global_tene, diagnostics_out, logger)
     sa.printIonicAbundancies(global_ionic_abundancies, "ionic_abundancies.out", logger)
     sf.printIcfs(global_icfs, "icfs.out", logger)
-
-    # Print ratios for all slits
-    with open(ratios_out, "w") as fout:
-        for key, lst in global_ratios.items():
-            print(
-                "{:<45} {:}".format(key, " ".join(["{:10.4f}".format(x) for x in lst])),
-                file=fout,
-            )
 
     pn.log_.close_file()

@@ -1,88 +1,96 @@
 import pyneb as pn
 import numpy as np
 
-def err2scalar(err_array):
-    """ Define the fucntion to produce a single (i.e. scalar) error value, 
-        when we have an array of error values (i.e. from Monte-Carlo 
-        simulations.
+
+def err2scalar(err_array, logger):
+    """
+    Define the fucntion to produce a single (i.e. scalar) error value,
+    when we have an array of error values (i.e. from Monte-Carlo
+    simulations.
     """
     if np.isnan(err_array).any():
-        print('WARNING  array contains nan! {:}'.format(err_array))
-    return np.std(err_array)
+        logger.warning(
+            "WARNING  array contains nan! {:} for computing error in temperature/density diagnostics".format(
+                err_array
+            )
+        )
+    return np.std(err_array[~np.isnan(err_array)])
 
 
-def computeTeNePairs_obsolete(density_diagnostics: list, tempterature_diagnostics: list, pnObs, pnErrObs, logger):
-    print("--------------------------------------------------------computeTeNePairs-start");
-    diags = pn.Diagnostics()
-    # Register all diagnostics with PyNeb
-    diags.addDiag(density_diagnostics+tempterature_diagnostics)
-    # Retrieve the list of valid diagnostics recognized by PyNeb
-    all_diags = diags.getDiagLabels()
-    # Filter out only valid diagnostics
-    valid_temp = [t for t in tempterature_diagnostics if t in all_diags]
-    valid_dens = [d for d in density_diagnostics if d in all_diags]
-    # Automatically generate valid (temperature, density) pairs
-    valid_pairs = [(t, d) for t in valid_temp for d in valid_dens]
-    print('Temperature Diagnostics: {:}'.format(valid_temp))
-    print('Density     Diagnostics: {:}'.format(valid_dens))
-    print('Valid       Diagnostics: {:}'.format(valid_pairs))
-    # Iterate valid pairs and add results to dictionary
+def computeTeNePairs(
+    density_diagnostics: list, tempterature_diagnostics: list, pnObs, pnErrObs, logger
+):
+    def filterPairs(densityd, temperatured, pobs):
+        user = [(td, dd) for td in temperatured for dd in densityd]
+        diags = pn.Diagnostics()
+        # construct all possible diagnostics from the give observation set
+        diags.addDiagsFromObs(pobs)
+        validLines = diags.getDiagLabels()
+        # filter user list based on observation set
+        return [(d[0], d[1]) for d in user if d[0] in validLines and d[1] in validLines]
+
     tene_slit_dict = []
-    for t, d in valid_pairs:
-        try:
-            st, sn = diags.getCrossTemDen(t, d, obs=pnObs)
-            et, en = diags.getCrossTemDen(t, d, obs=pnErrObs)
-            tene_slit_dict.append(
-                {'tene_pair': (t, d), 'sT': st, 'sN': sn, 'eT': et, 'eN': en})
-            # global_tene[slit_idx] = tene_slit_dict
-        except:
-            logger.info(
-                f"Skipping Tem/Den pair {t} (Temp) ↔ {d} (Density)")
-    print("--------------------------------------------------------computeTeNePairs-stop");
+    diags = pn.Diagnostics()
+    for pair in filterPairs(density_diagnostics, tempterature_diagnostics, pnObs):
+        st, sn = diags.getCrossTemDen(pair[0], pair[1], obs=pnObs)
+        et, en = diags.getCrossTemDen(pair[0], pair[1], obs=pnErrObs)
+        tene_slit_dict.append(
+            {"tene_pair": (pair[0], pair[1]), "sT": st, "sN": sn, "eT": et, "eN": en}
+        )
     return tene_slit_dict
 
-def computeTeNePairs(density_diagnostics: list, tempterature_diagnostics: list, pnObs, pnErrObs, logger):
-    print("--------------------------------------------------------computeTeNePairs-start");
-    diags = pn.Diagnostics()
-    tene_slit_dict = []
-    for td in tempterature_diagnostics:
-        for dd in density_diagnostics:
-            try:
-                st, sn = diags.getCrossTemDen(td, dd, obs=pnObs)
-                et, en = diags.getCrossTemDen(td, dd, obs=pnErrObs)
-                tene_slit_dict.append(
-                    {'tene_pair': (td, dd), 'sT': st, 'sN': sn, 'eT': et, 'eN': en})
-            except:
-                logger.info(
-                    f"Skipping Tem/Den pair {td} (Temp) ↔ {dd} (Density)")
-    print("--------------------------------------------------------computeTeNePairs-stop");
-    return tene_slit_dict
 
-def printTempDens(dict_of_tene, fn, logger):
-    num_slits = len(dict_of_tene)
-    with open(fn, 'w') as fout:
-        all_rows = []
-        for idx, elist in dict_of_tene.items():
-            for entry in elist:
-                # each elist is in the following form:
-                # {'tene_pair': (t,d), 'sT': st, 'sN': sn, 'eT': et, 'eN': en}
-                if entry['tene_pair'] not in all_rows:
-                    all_rows.append(entry['tene_pair'])
-        print("{:45s}{:}".format('#', ''.join(["Slit {:5d}{:16s}{:26s}".format(
-            d, ' ', ' ') for d in range(num_slits)])), file=fout)
-        print("{:45s}{:11s}   {:11s} {:11s}   {:11s}".format(
-            "Te/Ne Pair", "Tempature", "", "Density", ""), file=fout)
-        print('-'*(45+26*2*num_slits), file=fout)
-        for pair in all_rows:
-            print("{:45s}".format('/'.join(pair)), end='', file=fout)
-# value of TeNe pair (pair) for all slits ...
-            for sj in range(num_slits):
-                elist = dict_of_tene[sj]
-                edict = next(
-                    (item for item in elist if item["tene_pair"] == pair), None)
-# TODO handle case where edict is None!!
-                print("{:.5e} \u00B1 {:.5e} {:.5e} \u00B1 {:.5e} ".format(edict['sT'], err2scalar(
-                    edict['eT']), edict['sN'], err2scalar(edict['eN'])), end='', file=fout)
-# pair done !
-            print('', file=fout)
-    return fn
+def printDiagnostics(dict_of_diagnostics, fn, logger):
+    def pair2str(diag):
+        return "{:}/{:}".format(diag[0], diag[1])
+
+    def inDictOf(diags_list, diag):
+        for d in diags_list:
+            if d["tene_pair"] == diag:
+                return d
+        return None
+
+    # extract unique diagnostics and store columns
+    unique_diags = []
+    columns = []
+    for k, v in dict_of_diagnostics.items():
+        columns += [k]
+        unique_diags = list(set(unique_diags + [x["tene_pair"] for x in v]))
+
+    # sort rows & columns
+    unique_diags = sorted(unique_diags)
+    columns = sorted(columns)
+
+    with open(fn, "w") as fout:
+
+        # write first line
+        print("{:45s}".format(" "), file=fout, end="")
+        for col in columns:
+            print("{:26s} {:26s} ".format("Temperature", "Density"), file=fout, end="")
+        print("", file=fout)
+
+        # write second line, i.e. column keys
+        print("{:45s}".format("Slit Nr."), file=fout, end="")
+        for col in columns:
+            print("{:->6d}{:47s} ".format(col, "-" * 47), file=fout, end="")
+        print("", file=fout)
+
+        # iterate for every diagnostic in unique_diags
+        for diag in unique_diags:
+            print("{:45s}".format(pair2str(diag)), file=fout, end="")
+            for col in columns:
+                entry = inDictOf(dict_of_diagnostics[col], diag)
+                if entry is not None:
+                    print(
+                        "{:12.6e} {:12.6e} / {:12.6e} {:12.6e} ".format(
+                            entry["sT"],
+                            err2scalar(entry["eT"], logger),
+                            entry["sN"],
+                            err2scalar(entry["eN"], logger),
+                        ),
+                        file=fout,
+                        end="",
+                    )
+                else:
+                    print("{:53s} ".format(" "), file=fout, end="")
+            print("", file=fout)

@@ -86,9 +86,18 @@ parser.add_argument(
     "--ratios-out",
     metavar="RATIOS_OUTPUT_FILE",
     dest="ratios_out",
-    default="output_line_ratios",
+    default="line_ratios.dat",
     required=False,
-    help="Output file to write computed ratio results.",
+    help="Output file to write computed (line) ratio results.",
+)
+
+parser.add_argument(
+    "--diagnostics-out",
+    metavar="DIAGNOSTICS_OUTPUT_FILE",
+    dest="diagnostics_out",
+    default="tn_diagnostics.dat",
+    required=False,
+    help="Output file to write computed temperature/density diagnostics results.",
 )
 
 parser.add_argument(
@@ -142,5 +151,6 @@ if __name__ == "__main__":
         args.monte_carlo_fake_obs,
         args.intensities_out,
         args.ratios_out,
+        args.diagnostics_out,
         logger,
     )
