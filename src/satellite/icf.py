@@ -4,6 +4,7 @@ import numpy as np
 import satellite.roman as sr
 from typing import Union
 from math import isnan
+from os import remove
 
 
 def ctrue(*args):
@@ -255,6 +256,15 @@ def icfIsOfElement(icf, element):
     return False
 
 
+def getElementFromIcfName(icf_name):
+    for elem, law_sets in icf_dict.items():
+        for laws in law_sets.values():
+            for entry in laws:
+                if entry["name"] == icf_name:
+                    return elem
+    return None  # not found
+
+
 def IcfNameList() -> list:
     """Return a list with all values of 'name' keys, from the
     icf_dict dictionary.
@@ -300,8 +310,64 @@ def computeIcfs(abundancies, logger=None):
     allIcf = icf.getElemAbundance(
         renameIons({a[0]: a[1][0] for a in abundancies.items()}), IcfNameList()
     )
-    # print(allIcf)
     return allIcf
+
+
+def computeIcfsWithErrors(abundancies, logger=None):
+    """Assume that we are dealing with a formula like:
+    X = ICF * (A+B+C), then:
+    (sigma_X/X)^2 = (sigma_ICF/ICF)^2 + [sigma_A/A * A/(A+B+C)]^2 +
+        [sigma_B/B * B/(A+B+C)]^2 +
+        [sigma_C/C * C/(A+B+C)]^2
+    """
+    ne = computeIcfs(abundancies, logger)
+
+    icf = pn.ICF()
+    renamed_abunds = renameIons({k: v[0] for k, v in abundancies.items()})
+    renamed_errors = renameIons({k: v[1] for k, v in abundancies.items()})
+
+    results = {}
+
+    for icf_name, total_abund in ne.items():
+        if not np.isfinite(total_abund):
+            continue
+
+        element = getElementFromIcfName(icf_name)
+
+        # Find all contributing ions for this element
+        contributing_ions = [ion for ion in renamed_abunds if ion.startswith(element)]
+        if not contributing_ions:
+            continue
+
+        ionic_sum = sum(renamed_abunds[ion] for ion in contributing_ions)
+        if ionic_sum == 0:
+            continue
+
+        # Step 1: ionic part of uncertainty (quadrature of fractional contributions)
+        ionic_var = 0.0
+        for ion in contributing_ions:
+            x = renamed_abunds[ion]
+            dx = renamed_errors[ion]
+            if x == 0:
+                continue
+            weight = x / ionic_sum
+            ionic_var += (dx / x) ** 2 * weight**2
+
+        # Step 2: get ICF and its uncertainty
+        try:
+            icf_val = icf.getICF(element, renamed_abunds, icf_name)
+            icf_err = icf.getICFError(element, renamed_abunds, icf_name)
+        except Exception:
+            icf_val = 1.0
+            icf_err = 0.0
+
+        # Step 3: combine relative variances
+        rel_var = ionic_var + (icf_err / icf_val) ** 2
+        abs_uncertainty = total_abund * np.sqrt(rel_var)
+
+        results[icf_name] = (total_abund, abs_uncertainty)
+
+    return results
 
 
 def ionicAbundance2elementAbundance(abundancies, logger=None):
@@ -309,7 +375,7 @@ def ionicAbundance2elementAbundance(abundancies, logger=None):
     Example
     -------
     >>> abundancies = {'O1': (5.2507134485026286e-06, 5.2507134485026286e-06), 'O2': (9.374517342869009e-05, 6.784694600365557e-05), 'O3': (0.0005404778598225776, 0.00038217561305225653), 'He1': (0.10051405354336723, 0.07111350159031496), 'He2': (0.0066002184982703, 0.0066002184982703), 'Ar3': (2.1068655865313865e-06, 2.1068655865313865e-06), 'H1': (1.001583596941619, 0.7082274385540935), 'N1': (1.3020037638389353e-06, 1.3020037638389353e-06), 'N2': (1.5042597487660062e-05, 9.072192621667611e-06), 'Cl3': (1.1600426563474183e-07, 8.202740287769977e-08), 'S2': (5.923084867006183e-07, 4.1906409773640354e-07), 'S3': (6.652299608059526e-06, 4.703886163496009e-06)}
-    >>> ionicAbundance2elementAbundance(abundancies) -> {'O': 0.0006394737466997704, 'He': 0.10711427204163754, 'Ar': 2.1068655865313865e-06, 'H': 1.001583596941619, 'N': 1.6344601251499e-05, 'Cl': 1.1600426563474183e-07, 'S': 7.244608094760144e-06}
+    >>>
     """
 
     def stripElement(elemspec):
@@ -317,12 +383,25 @@ def ionicAbundance2elementAbundance(abundancies, logger=None):
         return g[1]
 
     elemdct = {}
-    for entry, vals in abundancies.items():
-        element = stripElement(entry)
-        if element in elemdct:
-            elemdct[element] += vals[0]
-        else:
-            elemdct[element] = vals[0]
+    # for entry, vals in abundancies.items():
+    #    element = stripElement(entry)
+    #    if element in elemdct:
+    #        elemdct[element] += vals[0]
+    #    else:
+    #        elemdct[element] = vals[0]
+    for ion_label, (val, err) in abundancies.items():
+        element = stripElement(ion_label)
+        if element not in elemdct:
+            elemdct[element] = {"abundance": 0e0, "unc_sq_sum": 0e0}
+
+        elemdct[element]["abundance"] += val
+        elemdct[element]["unc_sq_sum"] += err**2  # Add variance
+
+    # Finalize: compute sqrt of summed variances
+    for element in elemdct:
+        elemdct[element]["uncertainty"] = np.sqrt(elemdct[element]["unc_sq_sum"])
+        del elemdct[element]["unc_sq_sum"]  # clean up
+
     return elemdct
 
 
@@ -344,31 +423,59 @@ def printIcfs(icfs, elem_abundancies, fn, logger):
     def elementIcf(slit_icfs, element):
         element_icfs = {}
         for k, v in slit_icfs.items():
-            if not (np.isnan(v) or isnan(v)):
+            if not (np.isnan(v[0]) or isnan(v[0])):
                 if icfIsOfElement(k, element):
                     element_icfs[k] = v
         return element_icfs
 
-    with open(fn, "w") as fout:
+    # first pass: write everything but the first line. count max width per slit
+    max_col_widths = [0] * len(columns)
+    lines = [[] for _ in unique_elements]
 
-        # iterate for every element in unique_elements
-        for element in unique_elements:
-            print("{:5s}".format(element), file=fout, end="")
-            for col in columns:
+    # iterate for every element in unique_elements
+    for line_nr, element in enumerate(unique_elements):
+        # do not print abundancies for element H
+        if element != "H":
+            # print("{:5s}".format(element), file=fout, end="")
+            lines[line_nr].append("{:5s}".format(element))
+            for j, col in enumerate(columns):
                 # first write element total abundance
                 entry = inDictOfElements(elem_abundancies[col], element)
                 if entry is not None:
-                    print(
-                        "{:15.9e} ".format(entry),
-                        file=fout,
-                        end="",
+                    # print(
+                    #    "{:15.9e}/{:15.9} ".format(
+                    #        entry["abundance"], entry["uncertainty"]
+                    #    ),
+                    #    file=fout,
+                    #    end="",
+                    # )
+                    colstr = "{:15.9e}/{:15.9} ".format(
+                        entry["abundance"], entry["uncertainty"]
                     )
                 else:
-                    print("{:15s} ".format(" "), file=fout, end="")
+                    # print("{:31s} ".format(" "), file=fout, end="")
+                    colstr = "{:31s} ".format(" ")
                 # write any ICFs/DIMS
                 element_icfs = elementIcf(icfs[col], element)
                 for k, v in element_icfs.items():
-                    print("{:}:{:15.9e} ".format(k, v), file=fout, end="")
+                    msg = "{:}:{:15.9e}/{:15.9e} ".format(k, v[0], v[1])
+                    # print(f"{msg}", file=fout, end="")
+                    colstr += f"{msg}"
+                max_col_widths[j] = max(max_col_widths[j], len(colstr) - 1)
+                lines[line_nr].append(colstr)
+            # print("", file=fout)
+
+    # second pass, write header
+    with open(fn, "w") as fout:
+        print("Slit ", file=fout, end="")
+        for j, c in enumerate(max_col_widths):
+            print(
+                "-----{:2d}{:s} ".format(columns[j], "-" * (c - 7)), file=fout, end=""
+            )
+        for j, line in enumerate(lines):
+            print(f"{line[0]:<5s} ")
+            for lc in zip(line[1:], max_col_widths):
+                print(f"{lc[0]:<{lc[1]}}", file=fout, end="")
             print("", file=fout)
-    # print(icfs)
+        print("", file=fout)
     return fn

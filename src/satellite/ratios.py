@@ -116,6 +116,15 @@ def printRatios(dict_of_ratios, fn, logger) -> str:
     unique_ratios = sorted(unique_ratios)
     columns = sorted(columns)
 
+    # if columns are numeric values and start at 0, then add an 1 offset so they start from 1
+    offset = ""
+    try:
+        [int(c) for c in columns]
+        if columns[0] == 0:
+            offset = 1
+    except:
+        pass
+
     def inDictOf(idxDct, ratio):
         return idxDct[ratio] if ratio in idxDct else None
 
@@ -123,7 +132,7 @@ def printRatios(dict_of_ratios, fn, logger) -> str:
         # write first line, i.e. column keys
         print("{:40s}".format("Slit Nr."), file=fout, end="")
         for col in columns:
-            print("{:->6d}{:25s} ".format(col, "-" * 25), file=fout, end="")
+            print("{:->6d}{:25s} ".format(col + offset, "-" * 25), file=fout, end="")
         print("", file=fout)
 
         # iterate for every line in unique_lines
@@ -133,7 +142,9 @@ def printRatios(dict_of_ratios, fn, logger) -> str:
                 entry = inDictOf(dict_of_ratios[col], ratio)
                 if entry is not None:
                     print(
-                        "{:15.9e} {:15.9e} ".format(entry[0], entry[1]),
+                        "{:15.7e} {:15.7e} ".format(
+                            np.log10(entry[0]), np.log10(entry[1])
+                        ),
                         file=fout,
                         end="",
                     )

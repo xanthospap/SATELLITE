@@ -110,13 +110,20 @@ def computeIonicAbundancies(fitsd, tene_dict, pnObs, pnErrObs, logger):
             to_eval=extract_wavelength(pn_element),
             Hbeta=100.0,
         )[0]
-        eabd = pn_atom.getIonAbundance(
-            int_ratio=pnErrObs.getIntens(0)[pn_element],
-            tem=reftene["eT"],
-            den=reftene["eN"],
-            to_eval=extract_wavelength(pn_element),
-            Hbeta=100.0,
-        )[0]
+        # Uncertainty, loop over MC simulated inttensity ratios ...
+        int_mc = pnErrObs.getIntens()[pn_element]
+        eabd_array = np.array(
+            [
+                pn_atom.getIonAbundance(
+                    int_ratio=pnErrObs.getIntens(0)[pn_element],
+                    tem=reftene["eT"],
+                    den=reftene["eN"],
+                    to_eval=extract_wavelength(pn_element),
+                    Hbeta=100.0,
+                )[0]
+                for i in int_mc
+            ]
+        )
         ionic_abundancies_dict.append(
             {
                 "element": entry["element"],
@@ -124,7 +131,7 @@ def computeIonicAbundancies(fitsd, tene_dict, pnObs, pnErrObs, logger):
                 "atomic": entry["atomic"],
                 "pn_element": pn_element,
                 "abundance": sabd,
-                "abundance_error": eabd,
+                "abundance_error": eabd_array.std(),
             }
         )
     return ionic_abundancies_dict
@@ -152,28 +159,39 @@ def printIonicAbundancies(dict_of_abundancies, fn, logger):
     unique_lines = sorted(unique_lines)
     columns = sorted(columns)
 
+    # if columns are numeric values and start at 0, then add an 1 offset so they start from 1
+    offset = ""
+    try:
+        [int(c) for c in columns]
+        if columns[0] == 0:
+            offset = 1
+    except:
+        pass
+
     with open(fn, "w") as fout:
         # write first line, i.e. column keys
         print("{:15s}".format("Slit Nr."), file=fout, end="")
         for col in columns:
-            print("{:->6d}{:25s} ".format(col, "-" * 25), file=fout, end="")
+            print("{:->6d}{:25s} ".format(col + offset, "-" * 25), file=fout, end="")
         print("", file=fout)
 
         # iterate for every line in unique_lines
         for line in unique_lines:
-            print("{:15s}".format(line), file=fout, end="")
-            for col in columns:
-                entry = inDictOf(dict_of_abundancies[col], line)
-                if entry is not None:
-                    print(
-                        "{:15.9e} {:15.9e} ".format(
-                            entry["abundance"], entry["abundance_error"]
-                        ),
-                        file=fout,
-                        end="",
-                    )
-                else:
-                    print("{:31s} ".format(" "), file=fout, end="")
-            print("", file=fout)
+            # do not print abundance for H1r_4861A and H1r_6563A
+            if line not in ["H1r_4861A", "H1r_6563A"]:
+                print("{:15s}".format(line), file=fout, end="")
+                for col in columns:
+                    entry = inDictOf(dict_of_abundancies[col], line)
+                    if entry is not None:
+                        print(
+                            "{:15.9e} {:15.9e} ".format(
+                                entry["abundance"], entry["abundance_error"]
+                            ),
+                            file=fout,
+                            end="",
+                        )
+                    else:
+                        print("{:31s} ".format(" "), file=fout, end="")
+                print("", file=fout)
 
     return fn

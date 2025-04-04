@@ -224,11 +224,20 @@ def printIntensities(dict_of_intensities, fn, logger):
     unique_lines = sorted(unique_lines)
     columns = sorted(columns)
 
+    # if columns are numeric values and start at 0, then add an 1 offset so they start from 1
+    offset = ""
+    try:
+        [int(c) for c in columns]
+        if columns[0] == 0:
+            offset = 1
+    except:
+        pass
+
     with open(fn, "w") as fout:
         # write first line, i.e. column keys
         print("{:15s}".format("Slit Nr."), file=fout, end="")
         for col in columns:
-            print("{:->6d}{:25s} ".format(col, "-" * 25), file=fout, end="")
+            print("{:->6d}{:25s} ".format(col + offset, "-" * 25), file=fout, end="")
         print("", file=fout)
 
         # iterate for every line in unique_lines
@@ -248,14 +257,32 @@ def printIntensities(dict_of_intensities, fn, logger):
                     print("{:31s} ".format(" "), file=fout, end="")
             print("", file=fout)
 
-        # last line
-        print("{:15s}".format("E_BV/cHbeta"), file=fout, end="")
+        # cHbeta line
+        print("{:15s}".format("cHbeta"), file=fout, end="")
         for col in columns:
             print(
                 "{:15.9e} {:15.9e} ".format(
-                    dict_of_intensities[col]["E_BV"], dict_of_intensities[col]["cHbeta"]
+                    dict_of_intensities[col]["cHbeta"],
+                    dict_of_intensities[col]["cHbetaError"],
                 ),
                 file=fout,
                 end="",
             )
+        # F(Hb) line
+        # print("{:15s}".format("F(Hb)"), file=fout, end="")
+        # for col in columns:
+        #    print(
+        #        "{:15.9e} {:15s} ".format(dict_of_intensities[col]["F(Hb)"], ""),
+        #        file=fout,
+        #        end="",
+        #    )
+
+        ## I(Hb) line (debugging)
+        # print("{:15s}".format("I(Hb)"), file=fout, end="")
+        # for col in columns:
+        #    print(
+        #        "{:15.9e} {:15s} ".format(dict_of_intensities[col]["I(Hb)"], ""),
+        #        file=fout,
+        #        end="",
+        #    )
     return fn

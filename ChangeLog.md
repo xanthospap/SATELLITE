@@ -1,3 +1,15 @@
+# Version 1.2b1
+
+- [x] Ratios are orinted as log10.
+- [x] Slit indexing starts at 1 (not 1) for all output files.
+- [x] Abundance not printed for H1r_4861A and H1r_6563A (abundancies.dat).
+- [x] Total abundance not printed for element H (total_abundancies.dat).
+- [x] Added RV as a command line parameter with a default value of 3.1. Help meesage now includes: `-RV R_V               Reddening correction RV parameter for Pyneb; note that R_V = AV/E_BV. Default value is 3.1 (default: 3.1)`.
+- [x] Added uncertainty for cHbeta (line_intensities.dat).
+- [x] Corrected uncertainty computation in ionic abundancies (abundancies.dat).
+- [x] Added function computeIcfsWithErrors to compute ICFs uncertainties.
+- [ ] 
+
 # Version 1.1b1
 
 - [x] Added source code file nomenclature.py

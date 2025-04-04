@@ -48,6 +48,7 @@ def specific_slit_analysis(
     ext_law: str,
     pn_atomic_data: str,
     monte_carlo_fake_obs: int,
+    pn_rv: float,
     intensities_out: str,
     ratios_out: str,
     diagnostics_out: str,
@@ -150,7 +151,16 @@ def specific_slit_analysis(
         eobs.extinction.law = ext_law
         eobs.correctData(normWave=4861.0)
 
-        RC = pn.RedCorr(E_BV=sobs.extinction.E_BV[0], law=ext_law)
+        RC = pn.RedCorr(E_BV=sobs.extinction.E_BV[0], R_V=pn_rv, law=ext_law)
+
+        # Use Monte-Carlo simulations for E(B-V) and c(Hb) undertainties
+        # 1. factor to convert E(B–V) to c(Hβ)
+        RC_test = pn.RedCorr(E_BV=1.0, R_V=pn_rv, law=ext_law)
+        f = RC_test.cHbeta
+        # 2. Get uncertainty on E(B–V) from Monte Carlo results
+        ebv_err = eobs.extinction.E_BV.std()
+        # 3. Convert to c(Hβ) uncertainty
+        chbeta_err = f * ebv_err
 
         # Compute intensity for each FITS/atom; add to global dictionary for printing
         # later on.
@@ -160,7 +170,10 @@ def specific_slit_analysis(
                 fitsd, sobs, eobs, RC, reference_element, logger
             ),
             "E_BV": RC.E_BV,
+            "E_BVError": ebv_err,
             "cHbeta": RC.cHbeta,
+            "cHbetaError": chbeta_err,
+            "fac": f,
         }
 
         # Compute intensity ratios
@@ -187,10 +200,8 @@ def specific_slit_analysis(
         elemspec_abundancies = sb.computeAbundancies(
             cpd, global_ionic_abundancies[slit_idx], logger
         )
-        # print("-----------------------------------------------------------")
-        # print(elemspec_abundancies)
-        # print("-----------------------------------------------------------")
-        global_icfs[slit_idx] = sf.computeIcfs(elemspec_abundancies, logger)
+
+        global_icfs[slit_idx] = sf.computeIcfsWithErrors(elemspec_abundancies, logger)
         global_element_abundancies[slit_idx] = sf.ionicAbundance2elementAbundance(
             elemspec_abundancies, logger
         )

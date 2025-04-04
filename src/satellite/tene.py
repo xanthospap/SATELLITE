@@ -61,6 +61,15 @@ def printDiagnostics(dict_of_diagnostics, fn, logger):
     unique_diags = sorted(unique_diags)
     columns = sorted(columns)
 
+    # if columns are numeric values and start at 0, then add an 1 offset so they start from 1
+    offset = ""
+    try:
+        [int(c) for c in columns]
+        if columns[0] == 0:
+            offset = 1
+    except:
+        pass
+
     with open(fn, "w") as fout:
 
         # write first line
@@ -72,7 +81,7 @@ def printDiagnostics(dict_of_diagnostics, fn, logger):
         # write second line, i.e. column keys
         print("{:45s}".format("Slit Nr."), file=fout, end="")
         for col in columns:
-            print("{:->6d}{:47s} ".format(col, "-" * 47), file=fout, end="")
+            print("{:->6d}{:47s} ".format(col + offset, "-" * 47), file=fout, end="")
         print("", file=fout)
 
         # iterate for every diagnostic in unique_diags

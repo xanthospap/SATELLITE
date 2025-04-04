@@ -74,6 +74,16 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "-RV",
+    metavar="R_V",
+    dest="pn_rv",
+    type=float,
+    default=3.1e0,
+    required=False,
+    help="Reddening correction RV parameter for Pyneb; note that R_V = AV/E_BV. Default value is 3.1",
+)
+
+parser.add_argument(
     "--intensities-out",
     metavar="INTENSITIES_OUTPUT_FILE",
     dest="intensities_out",
@@ -167,6 +177,7 @@ if __name__ == "__main__":
         args.pn_extinction,
         args.pn_atomic_data,
         args.monte_carlo_fake_obs,
+        args.pn_rv,
         args.intensities_out,
         args.ratios_out,
         args.diagnostics_out,
