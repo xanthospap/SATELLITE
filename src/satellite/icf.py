@@ -436,34 +436,26 @@ def printIcfs(icfs, elem_abundancies, fn, logger):
     for line_nr, element in enumerate(unique_elements):
         # do not print abundancies for element H
         if element != "H":
-            # print("{:5s}".format(element), file=fout, end="")
             lines[line_nr].append("{:5s}".format(element))
             for j, col in enumerate(columns):
                 # first write element total abundance
                 entry = inDictOfElements(elem_abundancies[col], element)
                 if entry is not None:
-                    # print(
-                    #    "{:15.9e}/{:15.9} ".format(
-                    #        entry["abundance"], entry["uncertainty"]
-                    #    ),
-                    #    file=fout,
-                    #    end="",
-                    # )
                     colstr = "{:15.9e}/{:15.9} ".format(
                         entry["abundance"], entry["uncertainty"]
                     )
                 else:
-                    # print("{:31s} ".format(" "), file=fout, end="")
                     colstr = "{:31s} ".format(" ")
                 # write any ICFs/DIMS
                 element_icfs = elementIcf(icfs[col], element)
                 for k, v in element_icfs.items():
                     msg = "{:}:{:15.9e}/{:15.9e} ".format(k, v[0], v[1])
-                    # print(f"{msg}", file=fout, end="")
                     colstr += f"{msg}"
                 max_col_widths[j] = max(max_col_widths[j], len(colstr) - 1)
                 lines[line_nr].append(colstr)
-            # print("", file=fout)
+
+    # remove empty sublists
+    lines = [line for line in lines if line != []]
 
     # second pass, write header
     with open(fn, "w") as fout:
@@ -472,10 +464,12 @@ def printIcfs(icfs, elem_abundancies, fn, logger):
             print(
                 "-----{:2d}{:s} ".format(columns[j], "-" * (c - 7)), file=fout, end=""
             )
+        print("", file=fout)
+        # print(lines)
         for j, line in enumerate(lines):
-            print(f"{line[0]:<5s} ")
+            print(f"{line[0]:<5s} ", file=fout, end="")
             for lc in zip(line[1:], max_col_widths):
-                print(f"{lc[0]:<{lc[1]}}", file=fout, end="")
+                print(f"{lc[0]:<{lc[1]}},", file=fout, end="")
             print("", file=fout)
         print("", file=fout)
     return fn

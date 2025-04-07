@@ -5,6 +5,7 @@ from satellite import cfgio
 from satellite import roman
 from satellite import specific_slit
 from satellite import satlogger
+from satellite import plotters
 
 import argparse
 import os
@@ -148,6 +149,10 @@ parser.add_argument(
     help="Write log to an output file.",
 )
 
+parser.add_argument(
+    "--no-plots", action="store_true", dest="no_plots", help="Do no produce plotts."
+)
+
 if __name__ == "__main__":
 
     # parse cmd
@@ -185,3 +190,16 @@ if __name__ == "__main__":
         args.total_abundancies_out,
         logger,
     )
+
+    # if needed draw the plots ...
+    if not args.no_plots:
+        print("Compiling plots ...")
+        plotters.plotLineAbundancies(args.abundancies_out, "line_abundancies.pdf")
+        plotters.plotLineIntensities(args.intensities_out, "line_intensities.pdf")
+        plotters.plotLineRatios(args.ratios_out, "line_ratios.pdf")
+        plotters.PlotTeNeDiagnostics(
+            args.diagnostics_out, "temperature.pdf", "density.pdf"
+        )
+        plotters.plotTotalAbundancies(
+            args.total_abundancies_out, "total_abundancies.pdf"
+        )

@@ -8,7 +8,8 @@
 - [x] Added uncertainty for cHbeta (line_intensities.dat).
 - [x] Corrected uncertainty computation in ionic abundancies (abundancies.dat).
 - [x] Added function computeIcfsWithErrors to compute ICFs uncertainties.
-- [ ] 
+- [x] Total abundancies now contain uncertainties (total_abundancies.dat).
+- [x] Added plotters for all output files (source at src/satellite/plotters.py). 
 
 # Version 1.1b1
 
