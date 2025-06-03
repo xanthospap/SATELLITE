@@ -19,8 +19,11 @@ import satellite.icf as sf
 import satellite.ratios as so
 
 
+# def getFitsSlit(fits_fn: str, slit: dict, logger=None):
 def getFitsSlit(fits_fn: str, slit: dict, logger=None):
-    mat = fs.loadFitsImageData(fits_fn)
+    mat = fs.rotate2d(
+        fs.loadFitsImageData(fits_fn), slit["PA"], slit["y"] - 1, slit["x"] - 1
+    )
     return fs.getVerticalSlit(
         mat, slit["y"] - 1, slit["x"] - 1, slit["w"], slit["h"], logger
     )
