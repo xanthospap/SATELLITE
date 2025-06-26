@@ -204,44 +204,56 @@ def plotTotalAbundancies(fn, barplot=False, fnout=None, optionsFn=None):
             for law, tpls in v.items():
                 y = [z[0] for z in tpls]
                 ey = [z[1] for z in tpls]
-                # 1. Scatter plot
-                ax.scatter(
-                    x,
-                    y,
-                    label=law,
-                    zorder=3,
-                )
-                # 2. Line plot connecting the points
-                ax.plot(
-                    x,
-                    y,
-                    linestyle=plotOptions["line_style"],
-                    zorder=1,
-                    label="_nolegend_",
-                )
-                # 3. Error bars
-                if not plotOptions["shaded_error_bars"]:
-                    ax.errorbar(
+                if not barplot:
+                    # 1. Scatter plot
+                    ax.scatter(
+                        x,
+                        y,
+                        label=law,
+                        zorder=3,
+                    )
+                    # 2. Line plot connecting the points
+                    ax.plot(
+                        x,
+                        y,
+                        linestyle=plotOptions["line_style"],
+                        zorder=1,
+                        label="_nolegend_",
+                    )
+                    # 3. Error bars
+                    if not plotOptions["shaded_error_bars"]:
+                        ax.errorbar(
+                            x,
+                            y,
+                            yerr=ey,
+                            fmt="o",
+                            ecolor=plotOptions["error_bar_color"],
+                            elinewidth=plotOptions["error_bar_width"],
+                            capsize=plotOptions["error_bar_capsize"],
+                            zorder=2,
+                            label="_nolegend_",
+                        )
+                    else:
+                        y = np.array(y)
+                        ey = np.array(ey)
+                        ax.fill_between(
+                            x,
+                            y - ey,
+                            y + ey,
+                            alpha=plotOptions["error_bar_alpha"],
+                            zorder=2,
+                            label="_nolegend_",
+                        )
+                else:
+                    plt.bar(
                         x,
                         y,
                         yerr=ey,
-                        fmt="o",
-                        ecolor=plotOptions["error_bar_color"],
-                        elinewidth=plotOptions["error_bar_width"],
+                        color=plotOptions["data_points_color"],
                         capsize=plotOptions["error_bar_capsize"],
-                        zorder=2,
-                        label="_nolegend_",
-                    )
-                else:
-                    y = np.array(y)
-                    ey = np.array(ey)
-                    ax.fill_between(
-                        x,
-                        y - ey,
-                        y + ey,
-                        alpha=plotOptions["error_bar_alpha"],
-                        zorder=2,
-                        label="_nolegend_",
+                        ecolor=plotOptions["error_bar_color"],
+                        edgecolor="black",
+                        zorder=3,
                     )
 
             ax.set_xlabel("Slit Nr.")
