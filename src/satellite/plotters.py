@@ -1,10 +1,11 @@
 import re
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 
 defaultPlotOptions = {
-    "style_sheet": "dark_background",
+    "style_sheet": "default",
     "data_points_color": "blue",
     "data_points_line_width": 1.2,
     "line_color": "blue",
@@ -16,6 +17,11 @@ defaultPlotOptions = {
     "shaded_error_bars": True,
     "error_bar_alpha": 0.2,
 }
+
+# Set y-axis to scientific notation
+formatter = ticker.ScalarFormatter(useMathText=True)
+formatter.set_scientific(True)
+formatter.set_powerlimits((-0, 0))  # Control when scientific notation kicks in
 
 
 def loadPlotOptions(fn=None):
@@ -104,7 +110,9 @@ def genericParser(fn):
     return columns, data
 
 
-def genericPlotter(columns, data, fnout, y_axis_label, title_keyword, optionsFn=None):
+def genericPlotter(
+    columns, data, fnout, y_axis_label, title_keyword, barplot=False, optionsFn=None
+):
     plotOptions = loadPlotOptions(optionsFn)
 
     if plotOptions["style_sheet"] is not None:
@@ -113,63 +121,76 @@ def genericPlotter(columns, data, fnout, y_axis_label, title_keyword, optionsFn=
     with PdfPages(fnout) as pdf:
         for k, v in data.items():
             fig, ax = plt.subplots()
-            ax.set_title(f"{title_keyword} {k}")
+            # ax.set_title(f"{title_keyword} {k}")
             x = columns
             y = v[0]
             ey = v[1]
-            # 1. Scatter plot
-            ax.scatter(
-                x,
-                y,
-                facecolors=plotOptions["data_points_color"],
-                edgecolors=plotOptions["error_bar_color"],
-                linewidth=plotOptions["data_points_line_width"],
-                zorder=3,
-            )
-            # 2. Line plot connecting the points
-            ax.plot(
-                x,
-                y,
-                color=plotOptions["line_color"],
-                linestyle=plotOptions["line_style"],
-                zorder=1,
-            )
-            # 3. Error bars
-            if not plotOptions["shaded_error_bars"]:
-                ax.errorbar(
+            if not barplot:
+                # 1. Scatter plot
+                ax.scatter(
+                    x,
+                    y,
+                    facecolors=plotOptions["data_points_color"],
+                    edgecolors=plotOptions["error_bar_color"],
+                    linewidth=plotOptions["data_points_line_width"],
+                    zorder=3,
+                )
+                # 2. Line plot connecting the points
+                ax.plot(
+                    x,
+                    y,
+                    color=plotOptions["line_color"],
+                    linestyle=plotOptions["line_style"],
+                    zorder=1,
+                )
+                # 3. Error bars
+                if not plotOptions["shaded_error_bars"]:
+                    ax.errorbar(
+                        x,
+                        y,
+                        yerr=ey,
+                        fmt="o",
+                        color="blue",
+                        ecolor=plotOptions["error_bar_color"],
+                        elinewidth=plotOptions["error_bar_width"],
+                        capsize=plotOptions["error_bar_capsize"],
+                        zorder=2,
+                    )
+                else:
+                    y = np.array(y)
+                    ey = np.array(ey)
+                    ax.fill_between(
+                        x,
+                        y - ey,
+                        y + ey,
+                        color=plotOptions["error_bar_color"],
+                        alpha=plotOptions["error_bar_alpha"],
+                        zorder=2,
+                    )
+            else:
+                plt.bar(
                     x,
                     y,
                     yerr=ey,
-                    fmt="o",
-                    color="blue",
-                    ecolor=plotOptions["error_bar_color"],
-                    elinewidth=plotOptions["error_bar_width"],
+                    color=plotOptions["data_points_color"],
                     capsize=plotOptions["error_bar_capsize"],
-                    zorder=2,
-                )
-            else:
-                y = np.array(y)
-                ey = np.array(ey)
-                ax.fill_between(
-                    x,
-                    y - ey,
-                    y + ey,
-                    color=plotOptions["error_bar_color"],
-                    alpha=plotOptions["error_bar_alpha"],
-                    zorder=2,
+                    ecolor=plotOptions["error_bar_color"],
+                    edgecolor="black",
+                    zorder=3,
                 )
 
             ax.set_xlabel("Slit Nr.")
-            ax.set_ylabel(f"{y_axis_label}")
+            # ax.set_ylabel(f"{y_axis_label}")
+            ax.set_ylabel(f"{y_axis_label} {k}")
             ax.grid(True)
+            ax.yaxis.set_major_formatter(formatter)
 
             pdf.savefig(fig)
             plt.close(fig)
 
 
-def plotTotalAbundancies(fn, fnout=None, optionsFn=None):
+def plotTotalAbundancies(fn, barplot=False, fnout=None, optionsFn=None):
     columns, data = parseTotalAbundancies(fn)
-    # print(data)
     plotOptions = loadPlotOptions(optionsFn)
 
     if plotOptions["style_sheet"] is not None:
@@ -179,7 +200,7 @@ def plotTotalAbundancies(fn, fnout=None, optionsFn=None):
     with PdfPages(fnout) as pdf:
         for k, v in data.items():
             fig, ax = plt.subplots()
-            ax.set_title(f"Total Abundancy for {k}")
+            # ax.set_title(f"Total Abundancy for {k}")
             for law, tpls in v.items():
                 y = [z[0] for z in tpls]
                 ey = [z[1] for z in tpls]
@@ -224,27 +245,28 @@ def plotTotalAbundancies(fn, fnout=None, optionsFn=None):
                     )
 
             ax.set_xlabel("Slit Nr.")
-            ax.set_ylabel("Abundance")
+            ax.set_ylabel(f"Total Abundancy for {k}")
             ax.grid(True)
+            ax.yaxis.set_major_formatter(formatter)
             ax.legend()
 
             pdf.savefig(fig)
             plt.close(fig)
 
 
-def plotLineIntensities(fn, fnout, optionsFn=None):
-    return genericPlotter(*genericParser(fn), fnout, "Intensity of", "Line Intensity")
+def plotLineIntensities(fn, fnout, barplot=False, optionsFn=None):
+    return genericPlotter(*genericParser(fn), fnout, "Intensity of", "", barplot)
 
 
-def plotLineAbundancies(fn, fnout, optionsFn=None):
-    return genericPlotter(*genericParser(fn), fnout, "Abundance of", "Line Abundance")
+def plotLineAbundancies(fn, fnout, barplot=False, optionsFn=None):
+    return genericPlotter(*genericParser(fn), fnout, "Abundance of", "", barplot)
 
 
-def plotLineRatios(fn, fnout, optionsFn=None):
-    return genericPlotter(*genericParser(fn), fnout, "Ratio", "Line Ratio")
+def plotLineRatios(fn, fnout, barplot=False, optionsFn=None):
+    return genericPlotter(*genericParser(fn), fnout, "Line Ratio", "", barplot)
 
 
-def PlotTeNeDiagnostics(fn, fnout_te, fnout_ne, optionsFn=None):
+def PlotTeNeDiagnostics(fn, fnout_te, fnout_ne, barplot=False, optionsFn=None):
     columns, data_te, data_ne = parseTeNeDat(fn)
-    genericPlotter(columns, data_te, fnout_te, "Ratio", "Temperature Ratio")
-    genericPlotter(columns, data_ne, fnout_ne, "Ratio", "Density Ratio")
+    genericPlotter(columns, data_te, fnout_te, "Temperature Ratio", "", barplot)
+    genericPlotter(columns, data_ne, fnout_ne, "Density Ratio", "", barplot)

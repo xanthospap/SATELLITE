@@ -22,7 +22,7 @@ import satellite.ratios as so
 # def getFitsSlit(fits_fn: str, slit: dict, logger=None):
 def getFitsSlit(fits_fn: str, slit: dict, logger=None):
     mat = fs.rotate2d(
-        fs.loadFitsImageData(fits_fn), slit["PA"], slit["y"] - 1, slit["x"] - 1
+        fs.loadFitsImageData(fits_fn), -1.0 * slit["PA"], slit["y"] - 1, slit["x"] - 1
     )
     return fs.getVerticalSlit(
         mat, slit["y"] - 1, slit["x"] - 1, slit["w"], slit["h"], logger
@@ -126,6 +126,8 @@ def specific_slit_analysis(
             # sum all elements of slit
             sm = np.sum(np.sum(ar))
             cpd[idx]["eslit_sum"] = sm
+        ## TODO
+        ## sum of Hb*energy_parameter here should be written to intensities.dat
 
         ## <-- End Looping FITS --> ##
 

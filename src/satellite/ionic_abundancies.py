@@ -94,6 +94,7 @@ def computeIonicAbundancies(fitsd, tene_dict, pnObs, pnErrObs, logger):
 
     for entry in fitsd:
         reftene = ref_tene_pair(refTenNe2PyNebPair(entry["ref_tene"]))
+        # print(reftene)
         if reftene is None:
             logger.error(
                 "ERROR Failed finding reference Te/Ne pair for ionic abundancies!"
@@ -112,18 +113,33 @@ def computeIonicAbundancies(fitsd, tene_dict, pnObs, pnErrObs, logger):
         )[0]
         # Uncertainty, loop over MC simulated inttensity ratios ...
         int_mc = pnErrObs.getIntens()[pn_element]
-        eabd_array = np.array(
-            [
-                pn_atom.getIonAbundance(
-                    int_ratio=pnErrObs.getIntens(0)[pn_element],
-                    tem=reftene["eT"],
-                    den=reftene["eN"],
-                    to_eval=extract_wavelength(pn_element),
-                    Hbeta=100.0,
-                )[0]
-                for i in int_mc
-            ]
-        )
+        #eabd_array = np.array(
+        #    [
+        #        pn_atom.getIonAbundance(
+        #            int_ratio=pnErrObs.getIntens(0)[pn_element],
+        #            tem=reftene["eT"],
+        #            den=reftene["eN"],
+        #            to_eval=extract_wavelength(pn_element),
+        #            Hbeta=100.0,
+        #        )[0]
+        #        for i in int_mc
+        #    ]
+        #)
+        # print(eabd_array)
+        # print(int_mc)
+        # print(reftene['eT'], reftene['eN'])
+## Replace above with this TODO
+        tar = []
+        for idx in range(len(int_mc)):
+            tar.append(pn_atom.getIonAbundance(
+                int_ratio=int_mc[idx],
+                tem=reftene["eT"][idx],
+                den=reftene["eN"][idx],
+                to_eval=extract_wavelength(pn_element),
+                Hbeta=100.0,
+            ))
+        eabd_array = np.array(tar)
+##
         ionic_abundancies_dict.append(
             {
                 "element": entry["element"],
@@ -131,7 +147,8 @@ def computeIonicAbundancies(fitsd, tene_dict, pnObs, pnErrObs, logger):
                 "atomic": entry["atomic"],
                 "pn_element": pn_element,
                 "abundance": sabd,
-                "abundance_error": eabd_array.std(),
+                # "abundance_error": eabd_array.std(),
+                "abundance_error": np.std(eabd_array),
             }
         )
     return ionic_abundancies_dict

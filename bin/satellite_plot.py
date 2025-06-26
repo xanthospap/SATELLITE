@@ -78,18 +78,33 @@ parser.add_argument(
     help="Total abundancies data file.",
 )
 
+parser.add_argument(
+    "--bar-plots",
+    action="store_true",
+    dest="barplot",
+    help="Plot using barplots instead of scatter plots.",
+)
+
 if __name__ == "__main__":
 
     # parse cmd
     args = parser.parse_args()
 
     if args.line_abundancies:
-        plotters.plotLineAbundancies(args.line_abundancies, "line_abundancies.pdf")
+        plotters.plotLineAbundancies(
+            args.line_abundancies, "line_abundancies.pdf", args.barplot
+        )
     if args.line_intensities:
-        plotters.plotLineIntensities(args.line_intensities, "line_intensities.pdf")
+        plotters.plotLineIntensities(
+            args.line_intensities, "line_intensities.pdf", args.barplot
+        )
     if args.line_ratios:
-        plotters.plotLineRatios(args.line_ratios, "line_ratios.pdf")
+        plotters.plotLineRatios(args.line_ratios, "line_ratios.pdf", args.barplot)
     if args.tene:
-        plotters.PlotTeNeDiagnostics(args.tene, "temperature.pdf", "density.pdf")
+        plotters.PlotTeNeDiagnostics(
+            args.tene, "temperature.pdf", "density.pdf", args.barplot
+        )
     if args.totalabun:
-        plotters.plotTotalAbundancies(args.totalabun, "total_abundancies.pdf")
+        plotters.plotTotalAbundancies(
+            args.totalabun, "total_abundancies.pdf", args.barplot
+        )

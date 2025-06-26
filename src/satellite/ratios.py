@@ -95,13 +95,15 @@ def computeRatio(ratio: str, intensity_list: list, logger=None):
         # val, err = getIntensity(sc.satellite_str2pyneb_str(ar[idx]))
         val, err = getIntensity(ar[idx])
         var += ar[idx - 1] * val
-        par1 += ar[idx - 1] * (err / val * np.log(10))
+        # par1 += ar[idx - 1] * (err / val * np.log(10))
+        par1 += ar[idx - 1] * ar[idx-1] * err * err
     for idx in range(1, len(par), 2):
         # val, err = getIntensity(sc.satellite_str2pyneb_str(par[idx]))
         val, err = getIntensity(par[idx])
         vpar += par[idx - 1] * val
-        par2 += par[idx - 1] * (err / val * np.log(10))
-    return var / vpar, np.sqrt(par1**2 + par2**2)
+        # par2 += par[idx - 1] * (err / val * np.log(10))
+        par2 += par[idx - 1] * par[idx-1] * err * err
+    return var / vpar, np.sqrt(par1/(vpar*vpar) + par2*var*var/(vpar*vpar))
 
 
 def printRatios(dict_of_ratios, fn, logger) -> str:
@@ -143,7 +145,9 @@ def printRatios(dict_of_ratios, fn, logger) -> str:
                 if entry is not None:
                     print(
                         "{:15.7e} {:15.7e} ".format(
-                            np.log10(entry[0]), np.log10(entry[1])
+                            # np.log10(entry[0]), np.log10(entry[1])
+                            # np.log10(entry[0]), (1e0/entry[0]/np.log(10)) * entry[1]
+                            entry[0], entry[1]
                         ),
                         file=fout,
                         end="",

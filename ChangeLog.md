@@ -1,3 +1,11 @@
+# Version 1.3b1
+
+- [x] PA angle (in config) now interpreted as clock-wise angle.
+- [x] Precision/error estimates fixed.
+- [x] Removed titles from all plots. Titles are now the y-axis labeles.
+- [x] All y-axis ticks are now in scientific format.
+- [x] Changed default matplotlib style-sheet to 'default'. 
+
 # Version 1.2b1
 
 - [x] Ratios are orinted as log10.
