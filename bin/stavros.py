@@ -141,6 +141,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--bar-plots",
+    action="store_true",
+    dest="barplot",
+    help="Plot using barplots (excluding total abundancies) instead of scatter plots. Only relevant if '--no-plots' is not set.",
+)
+
+parser.add_argument(
     "--log",
     metavar="LOG_FILE",
     dest="log_file",
@@ -194,11 +201,15 @@ if __name__ == "__main__":
     # if needed draw the plots ...
     if not args.no_plots:
         print("Compiling plots ...")
-        plotters.plotLineAbundancies(args.abundancies_out, "line_abundancies.pdf")
-        plotters.plotLineIntensities(args.intensities_out, "line_intensities.pdf")
-        plotters.plotLineRatios(args.ratios_out, "line_ratios.pdf")
+        plotters.plotLineAbundancies(
+            args.abundancies_out, "line_abundancies.pdf", args.barplot
+        )
+        plotters.plotLineIntensities(
+            args.intensities_out, "line_intensities.pdf", args.barplot
+        )
+        plotters.plotLineRatios(args.ratios_out, "line_ratios.pdf", args.barplot)
         plotters.PlotTeNeDiagnostics(
-            args.diagnostics_out, "temperature.pdf", "density.pdf"
+            args.diagnostics_out, "temperature.pdf", "density.pdf", args.barplot
         )
         plotters.plotTotalAbundancies(
             args.total_abundancies_out, "total_abundancies.pdf"

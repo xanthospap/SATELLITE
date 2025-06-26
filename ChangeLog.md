@@ -4,7 +4,8 @@
 - [x] Precision/error estimates fixed.
 - [x] Removed titles from all plots. Titles are now the y-axis labeles.
 - [x] All y-axis ticks are now in scientific format.
-- [x] Changed default matplotlib style-sheet to 'default'. 
+- [x] Changed default matplotlib style-sheet to 'default'.
+- [x] Optionally plot everything with barplots, except from total aundancies. In `bin/satellite_plot.py` bar plots are triggered with `--bar-plots` and in `bin/stavros.py` with `--bar-plots`.
 
 # Version 1.2b1
 

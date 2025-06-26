@@ -105,6 +105,4 @@ if __name__ == "__main__":
             args.tene, "temperature.pdf", "density.pdf", args.barplot
         )
     if args.totalabun:
-        plotters.plotTotalAbundancies(
-            args.totalabun, "total_abundancies.pdf", args.barplot
-        )
+        plotters.plotTotalAbundancies(args.totalabun, "total_abundancies.pdf")
