@@ -85,6 +85,16 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "-EP",
+    metavar="ENERGY_PARAMETER",
+    dest="energy_parameter",
+    type=float,
+    default=1e0,
+    required=False,
+    help="Energy parameter value for scaling F(Hb).",
+)
+
+parser.add_argument(
     "--intensities-out",
     metavar="INTENSITIES_OUTPUT_FILE",
     dest="intensities_out",
@@ -190,6 +200,7 @@ if __name__ == "__main__":
         args.pn_atomic_data,
         args.monte_carlo_fake_obs,
         args.pn_rv,
+        args.energy_parameter,
         args.intensities_out,
         args.ratios_out,
         args.diagnostics_out,

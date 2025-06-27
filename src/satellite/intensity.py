@@ -268,21 +268,15 @@ def printIntensities(dict_of_intensities, fn, logger):
                 file=fout,
                 end="",
             )
-        # F(Hb) line
-        # print("{:15s}".format("F(Hb)"), file=fout, end="")
-        # for col in columns:
-        #    print(
-        #        "{:15.9e} {:15s} ".format(dict_of_intensities[col]["F(Hb)"], ""),
-        #        file=fout,
-        #        end="",
-        #    )
-
-        ## I(Hb) line (debugging)
-        # print("{:15s}".format("I(Hb)"), file=fout, end="")
-        # for col in columns:
-        #    print(
-        #        "{:15.9e} {:15s} ".format(dict_of_intensities[col]["I(Hb)"], ""),
-        #        file=fout,
-        #        end="",
-        #    )
+        # Total F(Hb) line
+        print("\n{:15s}".format("F(Hb)"), file=fout, end="")
+        for col in columns:
+            print(
+                "{:15.9e} {:15.9e} ".format(
+                    dict_of_intensities[col]["FHb"],
+                    dict_of_intensities[col]["FHb_error"],
+                ),
+                file=fout,
+                end="",
+            )
     return fn

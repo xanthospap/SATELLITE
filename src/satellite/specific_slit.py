@@ -42,6 +42,19 @@ def extract_ion(label):
 reference_element = {"element": "H", "spectrum": "i", "atomic": 4861}
 
 
+def findEntry(element, spectrum, atomic, _list):
+    for entry in _list:
+        if (
+            entry["element"] == element
+            and entry["spectrum"] == spectrum
+            and entry["atomic"] == atomic
+        ):
+            return entry
+    raise RuntimeError(
+        f"ERROR Failed finding entry {element}{spectrum}_{atomic} in list!"
+    )
+
+
 def specific_slit_analysis(
     fitsd: list,
     slits: list,
@@ -52,6 +65,7 @@ def specific_slit_analysis(
     pn_atomic_data: str,
     monte_carlo_fake_obs: int,
     pn_rv: float,
+    energy_parameter: float,
     intensities_out: str,
     ratios_out: str,
     diagnostics_out: str,
@@ -126,8 +140,6 @@ def specific_slit_analysis(
             # sum all elements of slit
             sm = np.sum(np.sum(ar))
             cpd[idx]["eslit_sum"] = sm
-        ## TODO
-        ## sum of Hb*energy_parameter here should be written to intensities.dat
 
         ## <-- End Looping FITS --> ##
 
@@ -179,6 +191,18 @@ def specific_slit_analysis(
             "cHbeta": RC.cHbeta,
             "cHbetaError": chbeta_err,
             "fac": f,
+            "FHb": findEntry(
+                reference_element["element"],
+                reference_element["spectrum"],
+                reference_element["atomic"],
+                cpd,
+            )["sslit_sum"],
+            "FHb_error": findEntry(
+                reference_element["element"],
+                reference_element["spectrum"],
+                reference_element["atomic"],
+                cpd,
+            )["eslit_sum"],
         }
 
         # Compute intensity ratios
