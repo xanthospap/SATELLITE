@@ -196,13 +196,15 @@ def specific_slit_analysis(
                 reference_element["spectrum"],
                 reference_element["atomic"],
                 cpd,
-            )["sslit_sum"],
+            )["sslit_sum"]
+            * energy_parameter,
             "FHb_error": findEntry(
                 reference_element["element"],
                 reference_element["spectrum"],
                 reference_element["atomic"],
                 cpd,
-            )["eslit_sum"],
+            )["eslit_sum"]
+            * energy_parameter,
         }
 
         # Compute intensity ratios

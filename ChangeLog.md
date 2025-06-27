@@ -1,3 +1,9 @@
+
+# Version 1.3b2
+- [x] Added parameter (cmd) `-EP` for energy parameter. 
+- [x] Added extra line for F(Hb) in line_instensities.dat
+- [x] Added extra plot for F(Hb) (line_instensities).
+
 # Version 1.3b1
 
 - [x] PA angle (in config) now interpreted as clock-wise angle.
