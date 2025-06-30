@@ -18,6 +18,12 @@ import satellite.abundance as sb
 import satellite.icf as sf
 import satellite.ratios as so
 
+# Sometimes the monte carlo simulations create values that cause nan values
+# in Te/Ne diagnostics. If such a situation arises, we will go back and compute
+# new simulated observations. However, we can not do that forever; we are only
+# going to do it, MAX_NAN_IN_DIAGNOSTICS_ALLOWED times
+MAX_NAN_IN_DIAGNOSTICS_ALLOWED = 5
+
 
 # def getFitsSlit(fits_fn: str, slit: dict, logger=None):
 def getFitsSlit(fits_fn: str, slit: dict, logger=None):
@@ -159,68 +165,79 @@ def specific_slit_analysis(
         sobs.extinction.law = ext_law
         sobs.correctData(normWave=4861.0)
 
-        eobs = pn.Observation()
-        eobs.readData(
-            "test.dat", fileFormat="lines_in_rows_err_cols", errIsRelative=False
-        )
-        eobs.addMonteCarloObs(N=monte_carlo_fake_obs)
-        eobs.def_EBV(label1="H1r_6563A", label2="H1r_4861A", r_theo=2.85)
-        eobs.extinction.law = ext_law
-        eobs.correctData(normWave=4861.0)
+        # create Monte Carlo simulations untill TeNe diagnostics contains no nan
+        nan_diagnostics = True
+        times_nan_encountered = 0
+        while (
+            nan_diagnostics and times_nan_encountered < MAX_NAN_IN_DIAGNOSTICS_ALLOWED
+        ):
+            eobs = pn.Observation()
+            eobs.readData(
+                "test.dat", fileFormat="lines_in_rows_err_cols", errIsRelative=False
+            )
+            eobs.addMonteCarloObs(N=monte_carlo_fake_obs)
+            eobs.def_EBV(label1="H1r_6563A", label2="H1r_4861A", r_theo=2.85)
+            eobs.extinction.law = ext_law
+            eobs.correctData(normWave=4861.0)
 
-        RC = pn.RedCorr(E_BV=sobs.extinction.E_BV[0], R_V=pn_rv, law=ext_law)
+            RC = pn.RedCorr(E_BV=sobs.extinction.E_BV[0], R_V=pn_rv, law=ext_law)
 
-        # Use Monte-Carlo simulations for E(B-V) and c(Hb) undertainties
-        # 1. factor to convert E(B–V) to c(Hβ)
-        RC_test = pn.RedCorr(E_BV=1.0, R_V=pn_rv, law=ext_law)
-        f = RC_test.cHbeta
-        # 2. Get uncertainty on E(B–V) from Monte Carlo results
-        ebv_err = eobs.extinction.E_BV.std()
-        # 3. Convert to c(Hβ) uncertainty
-        chbeta_err = f * ebv_err
+            # Use Monte-Carlo simulations for E(B-V) and c(Hb) undertainties
+            # 1. factor to convert E(B–V) to c(Hβ)
+            RC_test = pn.RedCorr(E_BV=1.0, R_V=pn_rv, law=ext_law)
+            f = RC_test.cHbeta
+            # 2. Get uncertainty on E(B–V) from Monte Carlo results
+            ebv_err = eobs.extinction.E_BV.std()
+            # 3. Convert to c(Hβ) uncertainty
+            chbeta_err = f * ebv_err
 
-        # Compute intensity for each FITS/atom; add to global dictionary for printing
-        # later on.
-        """Example: global_intensities[1] = {'intensities': [...], 'E_BV': rc.E_BV, 'cHbeta': rc.cHbeta} """
-        global_intensities[slit_idx] = {
-            "intensities": si.computeIntensities(
-                fitsd, sobs, eobs, RC, reference_element, logger
-            ),
-            "E_BV": RC.E_BV,
-            "E_BVError": ebv_err,
-            "cHbeta": RC.cHbeta,
-            "cHbetaError": chbeta_err,
-            "fac": f,
-            "FHb": findEntry(
-                reference_element["element"],
-                reference_element["spectrum"],
-                reference_element["atomic"],
-                cpd,
-            )["sslit_sum"]
-            * energy_parameter,
-            "FHb_error": findEntry(
-                reference_element["element"],
-                reference_element["spectrum"],
-                reference_element["atomic"],
-                cpd,
-            )["eslit_sum"]
-            * energy_parameter,
-        }
+            # Compute intensity for each FITS/atom; add to global dictionary for printing
+            # later on.
+            """Example: global_intensities[1] = {'intensities': [...], 'E_BV': rc.E_BV, 'cHbeta': rc.cHbeta} """
+            global_intensities[slit_idx] = {
+                "intensities": si.computeIntensities(
+                    fitsd, sobs, eobs, RC, reference_element, logger
+                ),
+                "E_BV": RC.E_BV,
+                "E_BVError": ebv_err,
+                "cHbeta": RC.cHbeta,
+                "cHbetaError": chbeta_err,
+                "fac": f,
+                "FHb": findEntry(
+                    reference_element["element"],
+                    reference_element["spectrum"],
+                    reference_element["atomic"],
+                    cpd,
+                )["sslit_sum"]
+                * energy_parameter,
+                "FHb_error": findEntry(
+                    reference_element["element"],
+                    reference_element["spectrum"],
+                    reference_element["atomic"],
+                    cpd,
+                )["eslit_sum"]
+                * energy_parameter,
+            }
 
-        # Compute intensity ratios
-        global_ratios[slit_idx] = {}
-        for ratio in ratios:
-            try:
-                global_ratios[slit_idx][ratio] = so.computeRatio(
-                    ratio, global_intensities[slit_idx]["intensities"]
+            # Compute intensity ratios
+            global_ratios[slit_idx] = {}
+            for ratio in ratios:
+                try:
+                    global_ratios[slit_idx][ratio] = so.computeRatio(
+                        ratio, global_intensities[slit_idx]["intensities"]
+                    )
+                except:
+                    logger.info("Skipping ratio {:}".format(ratio))
+
+            # Compute diagnostics (te/ne pairs)
+            global_tene[slit_idx], nan_diagnostics = st.computeTeNePairs(
+                density_diagnostics, tempterature_diagnostics, sobs, eobs, logger
+            )
+            if nan_diagnostics:
+                logger.warning(
+                    f"Encountered nan value in diagnostics; restarting computations for slit! ({times_nan_encountered}/{MAX_NAN_IN_DIAGNOSTICS_ALLOWED})"
                 )
-            except:
-                logger.info("Skipping ratio {:}".format(ratio))
-
-        # Compute diagnostics (te/ne pairs)
-        global_tene[slit_idx] = st.computeTeNePairs(
-            density_diagnostics, tempterature_diagnostics, sobs, eobs, logger
-        )
+            times_nan_encountered += 1
 
         # Compute Ionic Abundancies
         global_ionic_abundancies[slit_idx] = sa.computeIonicAbundancies(

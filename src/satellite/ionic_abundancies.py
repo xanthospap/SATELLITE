@@ -113,33 +113,19 @@ def computeIonicAbundancies(fitsd, tene_dict, pnObs, pnErrObs, logger):
         )[0]
         # Uncertainty, loop over MC simulated inttensity ratios ...
         int_mc = pnErrObs.getIntens()[pn_element]
-        #eabd_array = np.array(
-        #    [
-        #        pn_atom.getIonAbundance(
-        #            int_ratio=pnErrObs.getIntens(0)[pn_element],
-        #            tem=reftene["eT"],
-        #            den=reftene["eN"],
-        #            to_eval=extract_wavelength(pn_element),
-        #            Hbeta=100.0,
-        #        )[0]
-        #        for i in int_mc
-        #    ]
-        #)
-        # print(eabd_array)
-        # print(int_mc)
-        # print(reftene['eT'], reftene['eN'])
-## Replace above with this TODO
         tar = []
         for idx in range(len(int_mc)):
-            tar.append(pn_atom.getIonAbundance(
-                int_ratio=int_mc[idx],
-                tem=reftene["eT"][idx],
-                den=reftene["eN"][idx],
-                to_eval=extract_wavelength(pn_element),
-                Hbeta=100.0,
-            ))
+            tar.append(
+                pn_atom.getIonAbundance(
+                    int_ratio=int_mc[idx],
+                    tem=reftene["eT"][idx],
+                    den=reftene["eN"][idx],
+                    to_eval=extract_wavelength(pn_element),
+                    Hbeta=100.0,
+                )
+            )
         eabd_array = np.array(tar)
-##
+        assert not (np.isnan(eabd_array).any() or np.isnan(np.std(eabd_array)))
         ionic_abundancies_dict.append(
             {
                 "element": entry["element"],

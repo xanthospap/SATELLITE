@@ -82,6 +82,7 @@ def makeIntensitiesDataFile(
         reference_element["atomic"],
         fitsd,
     )
+
     ref_sval = fitsd[ref_index][value_keys[0]]
     ref_eval = fitsd[ref_index][value_keys[1]]
     with open(fn, "w") as fout:

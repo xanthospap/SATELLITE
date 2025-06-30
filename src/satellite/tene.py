@@ -17,6 +17,9 @@ def err2scalar(err_array, logger):
     return np.std(err_array[~np.isnan(err_array)])
 
 
+MAX_NAN_OCCURANCES = 9
+
+
 def computeTeNePairs(
     density_diagnostics: list, tempterature_diagnostics: list, pnObs, pnErrObs, logger
 ):
@@ -29,15 +32,28 @@ def computeTeNePairs(
         # filter user list based on observation set
         return [(d[0], d[1]) for d in user if d[0] in validLines and d[1] in validLines]
 
+    includes_nan = False
     tene_slit_dict = []
     diags = pn.Diagnostics()
     for pair in filterPairs(density_diagnostics, tempterature_diagnostics, pnObs):
         st, sn = diags.getCrossTemDen(pair[0], pair[1], obs=pnObs)
         et, en = diags.getCrossTemDen(pair[0], pair[1], obs=pnErrObs)
+        if np.isnan(np.array([et, en])).any():
+            logger.warning(
+                f"Nan value(s) encountered while computing Te/Ne diagnostics!"
+            )
+            includes_nan = True
         tene_slit_dict.append(
-            {"tene_pair": (pair[0], pair[1]), "sT": st, "sN": sn, "eT": et, "eN": en}
+            {
+                "tene_pair": (pair[0], pair[1]),
+                "sT": st,
+                "sN": sn,
+                "eT": et,
+                "eN": en,
+            }
         )
-    return tene_slit_dict
+
+    return tene_slit_dict, includes_nan
 
 
 def printDiagnostics(dict_of_diagnostics, fn, logger):
