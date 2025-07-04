@@ -18,13 +18,6 @@ import satellite.abundance as sb
 import satellite.icf as sf
 import satellite.ratios as so
 
-# Sometimes the monte carlo simulations create values that cause nan values
-# in Te/Ne diagnostics. If such a situation arises, we will go back and compute
-# new simulated observations. However, we can not do that forever; we are only
-# going to do it, MAX_NAN_IN_DIAGNOSTICS_ALLOWED times
-MAX_NAN_IN_DIAGNOSTICS_ALLOWED = 5
-
-
 # def getFitsSlit(fits_fn: str, slit: dict, logger=None):
 def getFitsSlit(fits_fn: str, slit: dict, logger=None):
     mat = fs.rotate2d(
@@ -70,6 +63,7 @@ def specific_slit_analysis(
     ext_law: str,
     pn_atomic_data: str,
     monte_carlo_fake_obs: int,
+    max_nan_in_diagnostics_allowed_percentage: int,
     pn_rv: float,
     energy_parameter: float,
     intensities_out: str,
@@ -168,6 +162,7 @@ def specific_slit_analysis(
         # create Monte Carlo simulations untill TeNe diagnostics contains no nan
         nan_diagnostics = True
         times_nan_encountered = 0
+        MAX_NAN_IN_DIAGNOSTICS_ALLOWED = max_nan_in_diagnostics_allowed_percentage * monte_carlo_fake_obs // 100
         while (
             nan_diagnostics and times_nan_encountered < MAX_NAN_IN_DIAGNOSTICS_ALLOWED
         ):
