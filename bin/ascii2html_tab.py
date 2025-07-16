@@ -44,6 +44,12 @@ if __name__ == "__main__":
     columns, dct = plotters.parseTotalAbundancies(args.totalabun)
 
     nr_columns = len(columns) + 1
+    offset = None
+    try:
+        start = int(columns[0])
+        offset = 1 if (start == 0) else 0
+    except:
+        pass    
 
     print("""
             <!DOCTYPE html>
@@ -78,19 +84,37 @@ if __name__ == "__main__":
             <body>
     """)
 
+    def referenceAbundance(element, slit_nr):
+        for k, v in dct.items():
+            if k == element:
+                for ki, vi in v.items():
+                    if ki == 'TA':
+                        return vi[slit_nr][0]
+        raise RuntimeError(f'Failed getting reference abundance (TA) for element {element} and slit {slit}')
+
     print('<table>')
     for k, v in dct.items():
         print(f'<thead><tr><th colspan="{nr_columns*2+1}">Element {k}</th></tr>')
         print('<tr><th>Slit Nr.</th>')
-        for cname in columns: print(f'<th colspan="2">{cname}</th>')
-        print('</tr></thead>')
-        print('<tbody>')
+        for cname in columns:
+            try:
+                idx = int(cname) + offset
+            except:
+                idx = cname
+            print(f'<th colspan="2">{idx}</th>')
+        print('</tr></thead><tbody>')
         for ki, vi in v.items():
-            print('<tr>')
-            print(f'<th>{ki}</th>')
+# TA or ICF
+            print(f'<tr> <th>{ki}</th>')
             for ve in vi:
-                print(f'<td>{ve[0]}</td><td>{ve[1]}</td>')
+                print(f'<td>{ve[0]:.3e}</td><td>{ve[1]:.3e}</td>')
             print('</tr>')
+# Ratio w.r.t reference abundance
+            if ki != 'TA':
+                print(f'<tr> <th>ICF</th>')
+                for j, ve in enumerate(vi):
+                    print(f'<td colspan="2">{ve[0]/referenceAbundance(k, j):.2f}</td>')
+                print('</tr>')
         print('</tbody>')
     print('</table>')
 
