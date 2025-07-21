@@ -18,6 +18,7 @@ import satellite.abundance as sb
 import satellite.icf as sf
 import satellite.ratios as so
 
+
 # def getFitsSlit(fits_fn: str, slit: dict, logger=None):
 def getFitsSlit(fits_fn: str, slit: dict, logger=None):
     mat = fs.rotate2d(
@@ -162,7 +163,11 @@ def specific_slit_analysis(
         # create Monte Carlo simulations untill TeNe diagnostics contains no nan
         nan_diagnostics = True
         times_nan_encountered = 0
-        MAX_NAN_IN_DIAGNOSTICS_ALLOWED = max_nan_in_diagnostics_allowed_percentage * monte_carlo_fake_obs // 100
+        MAX_NAN_IN_DIAGNOSTICS_ALLOWED = (
+            max_nan_in_diagnostics_allowed_percentage * monte_carlo_fake_obs // 100
+        )
+        # MAX_NAN_IN_DIAGNOSTICS_ALLOWED cannot be zeros, or else we won;t get into the loop.
+        MAX_NAN_IN_DIAGNOSTICS_ALLOWED = max(1, MAX_NAN_IN_DIAGNOSTICS_ALLOWED)
         while (
             nan_diagnostics and times_nan_encountered < MAX_NAN_IN_DIAGNOSTICS_ALLOWED
         ):
@@ -234,7 +239,14 @@ def specific_slit_analysis(
                 )
             times_nan_encountered += 1
 
+        if nan_diagnostics or (times_nan_encountered >= MAX_NAN_IN_DIAGNOSTICS_ALLOWED):
+            msg = f"ERROR. Failed computing non-nan diagnostics after {times_nan_encountered} tries. Giving up!"
+            logger.error(msg)
+            raise RuntimeError(msg)
+
         # Compute Ionic Abundancies
+        print(global_ionic_abundancies)
+        print(slit_idx)
         global_ionic_abundancies[slit_idx] = sa.computeIonicAbundancies(
             cpd, global_tene[slit_idx], sobs, eobs, logger
         )

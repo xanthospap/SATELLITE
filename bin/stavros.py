@@ -75,13 +75,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--max-allowed-mc-tires",
+    "--max-allowed-mc-tries",
     metavar="MAX_ALLOWED_MC_TRIES",
     dest="max_allowed_mc_tries",
     type=int,
     default=15,
     required=False,
-    help="Sometimes the Monte Carlo simulated obs result in values that are invalid, producing Nan values for various computations. This value, given as a percentage, allows the reproduction of Monte Carlo simulated values up to some limit w.r.t the MONTE_CARLO_FAKE_OBS. E.g. if MONTE_CARLO_FAKE_OBS=500 and MAX_ALLOWED_MC_TRIES=15, then we can try at maximum 15%% of 500 i.e. 75 times."
+    help="Sometimes the Monte Carlo simulated obs result in values that are invalid, producing Nan values for various computations. This value, given as a percentage, allows the reproduction of Monte Carlo simulated values up to some limit w.r.t the MONTE_CARLO_FAKE_OBS. E.g. if MONTE_CARLO_FAKE_OBS=500 and MAX_ALLOWED_MC_TRIES=15, then we can try at maximum 15%% of 500 i.e. 75 times.",
 )
 
 parser.add_argument(
