@@ -245,8 +245,6 @@ def specific_slit_analysis(
             raise RuntimeError(msg)
 
         # Compute Ionic Abundancies
-        print(global_ionic_abundancies)
-        print(slit_idx)
         global_ionic_abundancies[slit_idx] = sa.computeIonicAbundancies(
             cpd, global_tene[slit_idx], sobs, eobs, logger
         )

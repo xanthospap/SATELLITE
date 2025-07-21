@@ -80,6 +80,8 @@ def omega1432(ea: dict) -> float:
 def u1417c(ea: dict) -> float:
     return U(ea) < 0.015
 
+def manualIcf()
+
 
 """ Spectrum notation to abundance/Ionic notation """
 elemspec2ionstr_dict = {
@@ -306,6 +308,7 @@ def renameIons(abundancies: dict) -> dict:
 
 
 def computeIcfs(abundancies, logger=None):
+    print(f'\t>>> call IcfNameList(): {IcfNameList()}')
     icf = pn.ICF()
     allIcf = icf.getElemAbundance(
         renameIons({a[0]: a[1][0] for a in abundancies.items()}), IcfNameList()
