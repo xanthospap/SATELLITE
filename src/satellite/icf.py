@@ -383,12 +383,6 @@ def ionicAbundance2elementAbundance(abundancies, logger=None):
         return g[1]
 
     elemdct = {}
-    # for entry, vals in abundancies.items():
-    #    element = stripElement(entry)
-    #    if element in elemdct:
-    #        elemdct[element] += vals[0]
-    #    else:
-    #        elemdct[element] = vals[0]
     for ion_label, (val, err) in abundancies.items():
         element = stripElement(ion_label)
         if element not in elemdct:
