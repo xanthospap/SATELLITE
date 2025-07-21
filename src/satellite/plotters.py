@@ -32,12 +32,22 @@ def loadPlotOptions(fn=None):
 def parseTotalAbundancies(fn):
     missing_entry = (np.nan, np.nan)
     dct = {}
+    omegas = {}
+    Us = {}
 
     with open(fn, "r") as fin:
         for line in fin.readlines():
             if line.lstrip().lower().startswith("slit"):
                 l = line.replace("-", "").strip().split()
                 columns = [x for x in l[1:]]
+            elif line.startswith("Omega"):
+                l = line.split()
+                for j, v in enumerate(l[1:]):
+                    omegas[columns[j]] = v
+            elif line.startswith("U "):
+                l = line.split()
+                for j, v in enumerate(l[1:]):
+                    Us[columns[j]] = v
             elif len(line) > 5:
                 line = line.replace("/", " ")
                 element = line[0:5].strip()
@@ -65,7 +75,7 @@ def parseTotalAbundancies(fn):
                         icfi += 2
         else:
             pass
-    return columns, dct
+    return columns, dct, omegas, Us
 
 
 def parseTeNeDat(fn):
@@ -190,7 +200,7 @@ def genericPlotter(
 
 
 def plotTotalAbundancies(fn, fnout=None, optionsFn=None):
-    columns, data = parseTotalAbundancies(fn)
+    columns, data, _, _ = parseTotalAbundancies(fn)
     plotOptions = loadPlotOptions(optionsFn)
 
     if plotOptions["style_sheet"] is not None:

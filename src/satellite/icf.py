@@ -27,9 +27,14 @@ def omega(elemspec_abundancies: dict) -> float:
     float:
         The value of Omega
     """
-    return elemspec_abundancies["O3"] / (
-        elemspec_abundancies["O2"] + elemspec_abundancies["O3"]
-    )
+    try:
+        return elemspec_abundancies["O3"] / (
+            elemspec_abundancies["O2"] + elemspec_abundancies["O3"]
+        )
+    except:
+        return elemspec_abundancies["O3"][0] / (
+            elemspec_abundancies["O2"][0] + elemspec_abundancies["O3"][0]
+        )
 
 
 def U(elemspec_abundancies: dict) -> float:
@@ -48,39 +53,42 @@ def U(elemspec_abundancies: dict) -> float:
     float:
         The value of U
     """
-    return elemspec_abundancies["He3"] / (
-        elemspec_abundancies["He2"] + elemspec_abundancies["He3"]
-    )
+    try:
+        return elemspec_abundancies["He3"] / (
+            elemspec_abundancies["He2"] + elemspec_abundancies["He3"]
+        )
+    except:
+        return elemspec_abundancies["He3"][0] / (
+            elemspec_abundancies["He2"][0] + elemspec_abundancies["He3"][0]
+        )
 
 
-def omega1435(ea: dict) -> float:
-    return omega(ea) <= 0.5
+def omega1435(omegav, uv) -> float:
+    return omegav <= 0.5
 
 
-def omega1436(ea: dict) -> float:
-    return omega(ea) > 0.5
+def omega1436(omegav, uv) -> float:
+    return omegav > 0.5
 
 
-def omega1414(ea: dict) -> float:
-    return omega(ea) <= 0.95
+def omega1414(omegav, uv) -> float:
+    return omegav <= 0.95
 
 
-def omega1414b(ea: dict) -> float:
-    return omega(ea) > 0.95
+def omega1414b(omegav, uv) -> float:
+    return omegav > 0.95
 
 
-def omega1429b(ea: dict) -> float:
-    return omega(ea) > 0.02 and omega(ea) < 0.95
+def omega1429b(omegav, uv) -> float:
+    return omegav > 0.02 and omegav < 0.95
 
 
-def omega1432(ea: dict) -> float:
-    return omega(ea) > 0.95
+def omega1432(omegav, uv) -> float:
+    return omegav > 0.95
 
 
-def u1417c(ea: dict) -> float:
-    return U(ea) < 0.015
-
-def manualIcf()
+def u1417c(omegav, uv) -> float:
+    return uv < 0.015
 
 
 """ Spectrum notation to abundance/Ionic notation """
@@ -270,6 +278,10 @@ def getElementFromIcfName(icf_name):
 def IcfNameList() -> list:
     """Return a list with all values of 'name' keys, from the
     icf_dict dictionary.
+
+    Example call:
+    >>> IcfNameList()
+    >>> ['KB94_A32', 'KB94_A30.10', 'DIMS14_35', 'DIMS14_36', 'KB94_A1.10', 'DIMS14_14', 'DIMS14_14b', 'KB94_A10', 'KB94_A8', 'KB94_A6', 'DIMS14_12', 'KB94_A36.10', 'KB94_A38.10', 'DIMS14_23', 'DIMS14_26', 'DIMS14_29b', 'DIMS14_32', 'KB94_A28.10', 'KB94_A27', 'DIMS14_17a', 'DIMS14_17b', 'DIMS14_17c', 'KB94_A12', 'KB94_A13.10', 'KB94_A16', 'KB94_A19', 'KB94_A21', 'KB94_A26', 'DIMS14_39', 'RR05_2', 'RR05_3', 'RR05_4']
     """
     return [
         entry["name"]
@@ -294,7 +306,12 @@ def renameIons(abundancies: dict) -> dict:
     Parameters
     ----------
     abundancies: dict
-        A dictionary where keys are elements, (e.g. 'HeI', 'OII',
+        A dictionary where keys are elements, (e.g. 'HeI', 'OII', ...)
+
+    Example
+    --------
+    >>> renameIons({'O1': np.float64(2.4326264721336407e-06), 'O2': np.float64(2.2954914792701307e-05), 'O3': np.float64(0.0002963497082918657), 'N1': np.float64(2.742370113432223e-07), 'N2': np.float64(2.3649163749694575e-06), 'He1': np.float64(0.11989790014907455), 'He2': np.float64(0.012375089973927573), 'Ar3': np.float64(7.696229948812361e-07), 'Cl3': np.float64(4.697062601788208e-08), 'H1': np.float64(1.0080578213512084), 'S2': np.float64(8.724656708931813e-08), 'S3': np.float64(1.4236060230320906e-06)})
+    >>> {'O': np.float64(2.4326264721336407e-06), 'O2': np.float64(2.2954914792701307e-05), 'O3': np.float64(0.0002963497082918657), 'N': np.float64(2.742370113432223e-07), 'N2': np.float64(2.3649163749694575e-06), 'He2': np.float64(0.11989790014907455), 'He3': np.float64(0.012375089973927573), 'Ar3': np.float64(7.696229948812361e-07), 'Cl3': np.float64(4.697062601788208e-08), 'H2': np.float64(1.0080578213512084), 'S2': np.float64(8.724656708931813e-08), 'S3': np.float64(1.4236060230320906e-06)}
     """
     acopy = {}
 
@@ -304,16 +321,69 @@ def renameIons(abundancies: dict) -> dict:
 
     for k, v in abundancies.items():
         acopy[ionstr2pyneb(elemspec2ionstr(*es_split(k)))] = v
+
     return acopy
 
 
 def computeIcfs(abundancies, logger=None):
-    print(f'\t>>> call IcfNameList(): {IcfNameList()}')
+    """
+    Example
+    -------
+    >>> computeIcfs({'He1': (np.float64(0.11989790014907455), np.float64(0.0024290548109774427)), 'He2': (np.float64(0.012375089973927573), np.float64(0.00030644222010208356)), 'H1': (np.float64(1.0080578213512084), np.float64(0.010954363783206234)), 'S2': (np.float64(8.724656708931813e-08), np.float64(3.6368619630816025e-09)), 'S3': (np.float64(1.4236060230320906e-06), np.float64(6.474589949531195e-08)), 'N1': (np.float64(2.742370113432223e-07), np.float64(3.088339543010921e-08)), 'N2': (np.float64(2.3649163749694575e-06), np.float64(7.846853280518262e-08)), 'Ar3': (np.float64(7.696229948812361e-07), np.float64(5.118305350315916e-08)), 'Cl3': (np.float64(4.697062601788208e-08), np.float64(1.7198167692195738e-09)), 'O1': (np.float64(2.4326264721336407e-06), np.float64(1.703462882653106e-07)), 'O2': (np.float64(2.2954914792701307e-05), np.float64(2.122843805043223e-06)), 'O3': (np.float64(0.0002963497082918657), np.float64(1.3243705440243252e-05))})
+    >>> {'KB94_A32': np.float64(4.416853398761392e-07), 'KB94_A10': np.float64(0.00020091915455175606), 'KB94_A8': np.float64(nan), 'KB94_A6': np.float64(nan), 'DIMS14_12': np.float64(0.0001992916808640836), 'KB94_A36.10': np.float64(6.402147642804062e-07), 'KB94_A38.10': np.float64(2.754948762720838e-07), 'DIMS14_23': np.float64(2.763227013462463e-07), 'DIMS14_26': np.float64(7.934917520559565e-07), 'DIMS14_29b': np.float64(nan), 'DIMS14_32': np.float64(nan), 'KB94_A28.10': np.float64(nan), 'KB94_A27': nan, 'DIMS14_17a': np.float64(nan), 'DIMS14_17b': np.float64(nan), 'DIMS14_17c': np.float64(nan), 'KB94_A12': np.float64(nan), 'KB94_A13.10': np.float64(nan), 'KB94_A16': np.float64(nan), 'KB94_A19': np.float64(nan), 'KB94_A21': np.float64(nan), 'KB94_A26': np.float64(nan), 'DIMS14_39': np.float64(nan), 'RR05_2': np.float64(nan), 'RR05_3': np.float64(nan), 'RR05_4': np.float64(nan), 'DIMS14_35': np.float64(3.2846467418925716e-07), 'DIMS14_36': np.float64(5.511584261396814e-07), 'KB94_A1.10': np.float64(5.058821131007465e-06), 'DIMS14_14': np.float64(4.000525659076789e-06), 'DIMS14_14b': np.float64(2.054823990511968e-05), 'KB94_A30.10': np.float64(nan)}
+    """
     icf = pn.ICF()
     allIcf = icf.getElemAbundance(
         renameIons({a[0]: a[1][0] for a in abundancies.items()}), IcfNameList()
     )
+
     return allIcf
+
+
+def computeManualIcfs(abundancies, logger=None):
+    # compute all possible ICFs
+    ne = computeIcfs(abundancies, logger)
+
+    # get total abundancies
+    total_abundancies = ionicAbundance2elementAbundance(abundancies)
+
+    # PyNeb
+    icf = pn.ICF()
+    renamed_abunds = renameIons({k: v[0] for k, v in abundancies.items()})
+    renamed_errors = renameIons({k: v[1] for k, v in abundancies.items()})
+
+    # get omega and u
+    eo = omega(renamed_abunds)
+    eu = U(renamed_abunds)
+
+    results = {}
+
+    for elem, allicfs in icf_dict.items():
+        if elem in total_abundancies:
+            # total abundance (and error) for element
+            ta_val, ta_err = (
+                total_abundancies[elem]["abundance"],
+                total_abundancies[elem]["uncertainty"],
+            )
+            # walk through ICF's for this element ...
+            for tp, lst in allicfs.items():
+                for icfdetails in lst:
+                    if icfdetails["cond"](eo, eu):
+                        print(f'\t>>>Element {elem} computing icf {icfdetails["name"]}')
+                        try:
+                            icf_val = icf.getElemAbundance(
+                                renamed_abunds, [icfdetails["name"]]
+                            )[icfdetails["name"]]
+                            print(f"\t>>> value: {icf_val}")
+                            if not (np.isnan(icf_val) or isnan(icf_val)):
+                                results[icfdetails["name"]] = (icf_val, 0e0)
+                        except:
+                            pass
+                    else:
+                        logger.debug(
+                            f'Skipping computation of {icfdetails["name"]} for element {elem} due to omega, U values ({eo:.4f}, {eu:.4f})'
+                        )
+    return results
 
 
 def computeIcfsWithErrors(abundancies, logger=None):
@@ -330,6 +400,10 @@ def computeIcfsWithErrors(abundancies, logger=None):
     renamed_errors = renameIons({k: v[1] for k, v in abundancies.items()})
 
     results = {}
+
+    # get omega and u
+    eo = omega(renamed_abunds)
+    eu = U(renamed_abunds)
 
     for icf_name, total_abund in ne.items():
         if not np.isfinite(total_abund):
@@ -370,6 +444,8 @@ def computeIcfsWithErrors(abundancies, logger=None):
 
         results[icf_name] = (total_abund, abs_uncertainty)
 
+    results["omega"] = eo
+    results["U"] = eu
     return results
 
 
@@ -377,8 +453,8 @@ def ionicAbundance2elementAbundance(abundancies, logger=None):
     """
     Example
     -------
-    >>> abundancies = {'O1': (5.2507134485026286e-06, 5.2507134485026286e-06), 'O2': (9.374517342869009e-05, 6.784694600365557e-05), 'O3': (0.0005404778598225776, 0.00038217561305225653), 'He1': (0.10051405354336723, 0.07111350159031496), 'He2': (0.0066002184982703, 0.0066002184982703), 'Ar3': (2.1068655865313865e-06, 2.1068655865313865e-06), 'H1': (1.001583596941619, 0.7082274385540935), 'N1': (1.3020037638389353e-06, 1.3020037638389353e-06), 'N2': (1.5042597487660062e-05, 9.072192621667611e-06), 'Cl3': (1.1600426563474183e-07, 8.202740287769977e-08), 'S2': (5.923084867006183e-07, 4.1906409773640354e-07), 'S3': (6.652299608059526e-06, 4.703886163496009e-06)}
-    >>>
+    >>> ionicAbundance2elementAbundance({'He1': (np.float64(0.07289117410488913), np.float64(0.0014473831132186096)), 'He2': (np.float64(0.025174496324910436), np.float64(0.00038447148833430333)), 'N1': (np.float64(2.4613015709276348e-08), np.float64(5.312011544474936e-09)), 'N2': (np.float64(5.097540067692014e-07), np.float64(5.666130804139922e-08)), 'S2': (np.float64(3.059625788523793e-08), np.float64(3.678995609088767e-09)), 'S3': (np.float64(8.109451468778343e-07), np.float64(1.889202176560218e-08)), 'H1': (np.float64(1.010407099346665), np.float64(0.0059810498635109646)), 'Cl3': (np.float64(2.166739769269426e-08), np.float64(7.071592860594983e-10)), 'Ar3': (np.float64(5.035899412128091e-07), np.float64(1.5991809652913825e-08)), 'O1': (np.float64(2.5751403644020295e-08), np.float64(1.0104436788415689e-08)), 'O2': (np.float64(1.1789314340737157e-05), np.float64(4.635885046610191e-06)), 'O3': (np.float64(0.0002431990283552331), np.float64(5.314201887002895e-06))})
+    >>> {'He': {'abundance': np.float64(0.09806567042979956), 'uncertainty': np.float64(0.001497576776586893)}, 'N': {'abundance': np.float64(5.343670224784777e-07), 'uncertainty': np.float64(5.690976450145411e-08)}, 'S': {'abundance': np.float64(8.415414047630721e-07), 'uncertainty': np.float64(1.9246908715003583e-08)}, 'H': {'abundance': np.float64(1.010407099346665), 'uncertainty': np.float64(0.0059810498635109646)}, 'Cl': {'abundance': np.float64(2.166739769269426e-08), 'uncertainty': np.float64(7.071592860594983e-10)}, 'Ar': {'abundance': np.float64(5.035899412128091e-07), 'uncertainty': np.float64(1.5991809652913825e-08)}, 'O': {'abundance': np.float64(0.0002550140940996143), 'uncertainty': np.float64(7.052111312284563e-06)}}
     """
 
     def stripElement(elemspec):
@@ -420,9 +496,10 @@ def printIcfs(icfs, elem_abundancies, fn, logger):
     def elementIcf(slit_icfs, element):
         element_icfs = {}
         for k, v in slit_icfs.items():
-            if not (np.isnan(v[0]) or isnan(v[0])):
-                if icfIsOfElement(k, element):
-                    element_icfs[k] = v
+            if k != "omega" and k != "U":
+                if not (np.isnan(v[0]) or isnan(v[0])):
+                    if icfIsOfElement(k, element):
+                        element_icfs[k] = v
         return element_icfs
 
     # first pass: write everything but the first line. count max width per slit
@@ -462,6 +539,17 @@ def printIcfs(icfs, elem_abundancies, fn, logger):
                 "-----{:2d}{:s} ".format(columns[j], "-" * (c - 7)), file=fout, end=""
             )
         print("", file=fout)
+
+        # print omega and u values
+        print(f"Omega ", end="", file=fout)
+        for j, c in enumerate(max_col_widths):
+            print(f"{icfs[j]['omega']:30.9e}", end="", file=fout)
+        print("", file=fout)
+        print(f"U     ", end="", file=fout)
+        for j, c in enumerate(max_col_widths):
+            print(f"{icfs[j]['U']:30.9e}", end="", file=fout)
+        print("", file=fout)
+
         # print(lines)
         for j, line in enumerate(lines):
             print(f"{line[0]:<5s} ", file=fout, end="")

@@ -258,6 +258,8 @@ def specific_slit_analysis(
         global_element_abundancies[slit_idx] = sf.ionicAbundance2elementAbundance(
             elemspec_abundancies, logger
         )
+        # ----> New part <----
+        # global_icfs[slit_idx] = sf.computeManualIcfs(elemspec_abundancies, logger)
 
     ## <-- End Looping Slits --> ##
 

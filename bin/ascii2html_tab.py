@@ -9,6 +9,7 @@ import logging
 
 satellite_version = "2.r1"
 
+
 class myFormatter(
     argparse.ArgumentDefaultsHelpFormatter, argparse.RawTextHelpFormatter
 ):
@@ -41,7 +42,7 @@ if __name__ == "__main__":
 
     # parse cmd
     args = parser.parse_args()
-    columns, dct = plotters.parseTotalAbundancies(args.totalabun)
+    columns, dct, omegas, us = plotters.parseTotalAbundancies(args.totalabun)
 
     nr_columns = len(columns) + 1
     offset = None
@@ -49,9 +50,10 @@ if __name__ == "__main__":
         start = int(columns[0])
         offset = 1 if (start == 0) else 0
     except:
-        pass    
+        pass
 
-    print("""
+    print(
+        """
             <!DOCTYPE html>
             <html lang="en">
             <head>
@@ -82,40 +84,61 @@ if __name__ == "__main__":
               </style>
             </head>
             <body>
-    """)
+    """
+    )
 
     def referenceAbundance(element, slit_nr):
         for k, v in dct.items():
             if k == element:
                 for ki, vi in v.items():
-                    if ki == 'TA':
+                    if ki == "TA":
                         return vi[slit_nr][0]
-        raise RuntimeError(f'Failed getting reference abundance (TA) for element {element} and slit {slit}')
+        raise RuntimeError(
+            f"Failed getting reference abundance (TA) for element {element} and slit {slit}"
+        )
 
-    print('<table>')
+    print("<table>")
+
+    # Slit statics, i.e. omega and U
+    print(f'<thead><tr><th colspan="{nr_columns*2+1}">Slit Statistics</th></tr>')
+    print("<tr><th>Slit Nr.</th>")
+    for cname in columns:
+        try:
+            idx = int(cname) + offset
+        except:
+            idx = cname
+        print(f'<th colspan="2">{idx}</th>')
+    print("</tr></thead><tbody><tr><th>Omega</th>")
+    for k, v in omegas.items():
+        print(f'<td colspan="2">{float(v):.3f}</td>')
+    print("</tr><th>U</th>")
+    for k, v in us.items():
+        print(f'<td colspan="2">{float(v):.3f}</td>')
+    print("</tr>")
+
     for k, v in dct.items():
         print(f'<thead><tr><th colspan="{nr_columns*2+1}">Element {k}</th></tr>')
-        print('<tr><th>Slit Nr.</th>')
+        print("<tr><th>Slit Nr.</th>")
         for cname in columns:
             try:
                 idx = int(cname) + offset
             except:
                 idx = cname
             print(f'<th colspan="2">{idx}</th>')
-        print('</tr></thead><tbody>')
+        print("</tr></thead><tbody>")
         for ki, vi in v.items():
-# TA or ICF
-            print(f'<tr> <th>{ki}</th>')
+            # TA or ICF
+            print(f"<tr> <th>{ki}</th>")
             for ve in vi:
-                print(f'<td>{ve[0]:.3e}</td><td>{ve[1]:.3e}</td>')
-            print('</tr>')
-# Ratio w.r.t reference abundance
-            if ki != 'TA':
-                print(f'<tr> <th>ICF</th>')
+                print(f"<td>{ve[0]:.3e}</td><td>{ve[1]:.3e}</td>")
+            print("</tr>")
+            # Ratio w.r.t reference abundance
+            if ki != "TA":
+                print(f"<tr> <th>ICF</th>")
                 for j, ve in enumerate(vi):
                     print(f'<td colspan="2">{ve[0]/referenceAbundance(k, j):.2f}</td>')
-                print('</tr>')
-        print('</tbody>')
-    print('</table>')
+                print("</tr>")
+        print("</tbody>")
+    print("</table>")
 
-    print('</body></html>')
+    print("</body></html>")
