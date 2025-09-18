@@ -413,12 +413,13 @@ def computeIcfsWithErrors(abundancies, logger=None):
 
         # Find all contributing ions for this element
         contributing_ions = [ion for ion in renamed_abunds if ion.startswith(element)]
-        if not contributing_ions:
-            continue
+        # if not contributing_ions:
+        #     continue
+        print(f"> Contributing ions for {element}: {contributing_ions}")
 
         ionic_sum = sum(renamed_abunds[ion] for ion in contributing_ions)
-        if ionic_sum == 0:
-            continue
+        # if ionic_sum == 0:
+        #    continue
 
         # Step 1: ionic part of uncertainty (quadrature of fractional contributions)
         ionic_var = 0.0
