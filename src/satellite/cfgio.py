@@ -68,12 +68,14 @@ def configFitsFileList(dct: dict):
                     + "."
                     + dct["data_list"]["suffix"]
                 )
+                recomb = atomic["ref_type"] if "ref_type" in atomic else "CEL"
                 fns.append(
                     {
                         "element": element["atom"],
                         "spectrum": spec["spectrum"].lower(),
                         "atomic": atomic["atomic_number"],
                         "ref_tene": atomic["ref_TeNe"],
+                        "ref_type": recomb,
                         "fns": os.path.join(dct["data_list"]["prefix"], sfn),
                         "fne": os.path.join(dct["data_list"]["prefix"], efn),
                     }

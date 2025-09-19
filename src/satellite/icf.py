@@ -369,7 +369,9 @@ def computeManualIcfs(abundancies, logger=None):
             for tp, lst in allicfs.items():
                 for icfdetails in lst:
                     if icfdetails["cond"](eo, eu):
-                        print(f'\t>>>Element {elem} computing icf {icfdetails["name"]}')
+                        logger.debug(
+                            f'Element {elem} computing icf {icfdetails["name"]}'
+                        )
                         try:
                             icf_val = icf.getElemAbundance(
                                 renamed_abunds, [icfdetails["name"]]
@@ -399,6 +401,10 @@ def computeIcfsWithErrors(abundancies, logger=None):
     renamed_abunds = renameIons({k: v[0] for k, v in abundancies.items()})
     renamed_errors = renameIons({k: v[1] for k, v in abundancies.items()})
 
+    koko = {k: v[0] for k, v in abundancies.items()}
+    print(f"{koko}")
+    print(f"{renamed_abunds}")
+
     results = {}
 
     # get omega and u
@@ -415,7 +421,7 @@ def computeIcfsWithErrors(abundancies, logger=None):
         contributing_ions = [ion for ion in renamed_abunds if ion.startswith(element)]
         # if not contributing_ions:
         #     continue
-        print(f"> Contributing ions for {element}: {contributing_ions}")
+        logger.debug(f"Contributing ions for {element}: {contributing_ions}")
 
         ionic_sum = sum(renamed_abunds[ion] for ion in contributing_ions)
         # if ionic_sum == 0:

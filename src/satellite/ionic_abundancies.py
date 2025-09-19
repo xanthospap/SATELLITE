@@ -33,7 +33,7 @@ def extract_wavelength(line_id):
     return None  # Return None if parsing fails
 
 
-def get_atom_model(element: str, ion: int, logger=None):
+def get_atom_model_obsolete(element: str, ion: int, logger=None):
     """
     Determines whether to use pn.RecAtom() (for recombination lines)
     or pn.Atom() (for collisional excitation lines).
@@ -62,9 +62,43 @@ def get_atom_model(element: str, ion: int, logger=None):
     """
     rec_atom_elements = {"H", "He"}
     if element in rec_atom_elements:
+        logger.debug(
+            f"Creating recombination atom from entry {element} {ion} for ionic abundancies. pn.RecAtom({element}, {ion})"
+        )
         return pn.RecAtom(element, ion)
     else:
+        logger.debug(
+            f"Creating (default) atom from entry {element} {ion} for ionic abundancies."
+        )
         return pn.Atom(element, ion)
+
+
+def get_atom_model(dct_entry, logger=None):
+    """
+    Determines whether to use pn.RecAtom() (for recombination lines)
+    or pn.Atom() (for collisional excitation lines).
+    """
+    ref_type = "CEL" if "ref_type" not in dct_entry else dct_entry["ref_type"]
+    if ref_type.upper() not in ["RL", "CEL"]:
+        if logger:
+            logger.error(f"Invalid ref_type for entry: {dct_entry}")
+        raise RuntimeError(f"ERROR Invalid ref_type for entry: {dct_entry}")
+    element = dct_entry["element"]
+    ion = sr.roman2int(dct_entry["spectrum"])
+    if ref_type.upper() == "CEL":
+        if "ref_type" not in dct_entry:
+            logger.debug(
+                f'Assuming ref_type=CEL for {element}{dct_entry["spectrum"]} beacuse ref_type entry is missing.'
+            )
+        logger.debug(
+            f'Creating (default) atom from entry {element} {ion} (or {element}{dct_entry["spectrum"]}) for ionic abundancies.'
+        )
+        return pn.Atom(element, ion)
+    else:
+        logger.debug(
+            f'Creating recombination atom from entry {element} {ion} (or {element}{dct_entry["spectrum"]}) for ionic abundancies. pn.RecAtom({element}, {ion})'
+        )
+        return pn.RecAtom(element, ion)
 
 
 def refTenNe2PyNebPair(ref_tene):
@@ -94,13 +128,15 @@ def computeIonicAbundancies(fitsd, tene_dict, pnObs, pnErrObs, logger):
 
     for entry in fitsd:
         reftene = ref_tene_pair(refTenNe2PyNebPair(entry["ref_tene"]))
-        # print(reftene)
         if reftene is None:
             logger.error(
                 "ERROR Failed finding reference Te/Ne pair for ionic abundancies!"
             )
             return
-        pn_atom = get_atom_model(entry["element"], sr.roman2int(entry["spectrum"]))
+        # pn_atom = get_atom_model_obsolete(
+        #    entry["element"], sr.roman2int(entry["spectrum"]), logger
+        # )
+        pn_atom = get_atom_model(entry, logger)
         pn_element = sn.objectIntensityPyNebCode(
             entry["element"], entry["spectrum"], entry["atomic"], logger
         )

@@ -19,7 +19,6 @@ import satellite.icf as sf
 import satellite.ratios as so
 
 
-# def getFitsSlit(fits_fn: str, slit: dict, logger=None):
 def getFitsSlit(fits_fn: str, slit: dict, logger=None):
     mat = fs.rotate2d(
         fs.loadFitsImageData(fits_fn), -1.0 * slit["PA"], slit["y"] - 1, slit["x"] - 1
@@ -114,7 +113,6 @@ def specific_slit_analysis(
 
     pn.log_.open_file("pyneblog.log")
 
-    """Example: global_intensities[1] = {'intensities': [...], 'E_BV': rc.E_BV, 'cHbeta': rc.cHbeta} """
     global_intensities = {}
     global_ratios = {}
     global_tene = {}
@@ -249,7 +247,13 @@ def specific_slit_analysis(
             cpd, global_tene[slit_idx], sobs, eobs, logger
         )
 
-        # ICFs & DIMS
+        # Compute abundancies per element, e.g.
+        # [...
+        # 'He2': (np.float64(0.025174496324910436), np.float64(0.00020749028502411882)),
+        # 'Ar3': (np.float64(5.035899412128091e-07), np.float64(2.0404083173261792e-08)),
+        # 'Cl3': (np.float64(2.166739769269426e-08), np.float64(9.154696103324478e-10)),
+        #  'N1': (np.float64(2.4613015709276348e-08), np.float64(9.722314034253516e-09)),
+        # ...]
         elemspec_abundancies = sb.computeAbundancies(
             cpd, global_ionic_abundancies[slit_idx], logger
         )
