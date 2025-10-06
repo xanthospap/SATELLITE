@@ -243,6 +243,7 @@ def specific_slit_analysis(
             raise RuntimeError(msg)
 
         # Compute Ionic Abundancies
+        logger.debug("> Calling computeIonicAbundancies ...")
         global_ionic_abundancies[slit_idx] = sa.computeIonicAbundancies(
             cpd, global_tene[slit_idx], sobs, eobs, logger
         )
@@ -254,11 +255,14 @@ def specific_slit_analysis(
         # 'Cl3': (np.float64(2.166739769269426e-08), np.float64(9.154696103324478e-10)),
         #  'N1': (np.float64(2.4613015709276348e-08), np.float64(9.722314034253516e-09)),
         # ...]
+        logger.debug("> Calling computeAbundancies ...")
         elemspec_abundancies = sb.computeAbundancies(
             cpd, global_ionic_abundancies[slit_idx], logger
         )
 
+        logger.debug("> Calling computeIcfsWithErrors ...")
         global_icfs[slit_idx] = sf.computeIcfsWithErrors(elemspec_abundancies, logger)
+        logger.debug("> Calling  ionicAbundance2elementAbundance ...")
         global_element_abundancies[slit_idx] = sf.ionicAbundance2elementAbundance(
             elemspec_abundancies, logger
         )

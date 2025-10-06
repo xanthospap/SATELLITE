@@ -3,12 +3,16 @@ import pyneb as pn
 import satellite.roman as sr
 
 
-def sum_element_abundancies(element, ionic_abundancies):
+def sum_element_abundancies(element, ionic_abundancies, logger=None):
+    if logger:
+        logger.debug(f"sum_element_abundancies for {element}:")
     atomic_sums = {}
     for entry in ionic_abundancies:
         if entry["element"] == element:
             spectrum = entry["spectrum"]
             atomic = entry["atomic"]
+            if logger:
+                logger.debug(f"\tadding contribution from {spectrum}{atomic}")
             if spectrum in atomic_sums:
                 t0 = (atomic_sums[spectrum][0] + entry["abundance"]) / 2e0
                 t1 = (
@@ -40,7 +44,7 @@ def computeAbundancies(fitsd, ionic_abundancies, logger):
     atomic_sums = {}
     for element in list(set([j["element"] for j in fitsd])):
         asum, asum_err, partial_list = sum_element_abundancies(
-            element, ionic_abundancies
+            element, ionic_abundancies, logger
         )
         atomic_sums.update(partial_list)
     return atomic_sums

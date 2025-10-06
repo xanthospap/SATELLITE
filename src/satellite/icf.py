@@ -291,7 +291,7 @@ def IcfNameList() -> list:
     ]
 
 
-def renameIons(abundancies: dict) -> dict:
+def renameIons(abundancies: dict, logger=None) -> dict:
     """Returns a copy of the input dictionary where the the keys are changed
     accroding to the transformation:
     key -> elemspec2ionstr() -> ionstr2pyneb() -> new_key
@@ -321,6 +321,10 @@ def renameIons(abundancies: dict) -> dict:
 
     for k, v in abundancies.items():
         acopy[ionstr2pyneb(elemspec2ionstr(*es_split(k)))] = v
+        if logger:
+            logger.debug(
+                f"renameIons translated {k} to {ionstr2pyneb(elemspec2ionstr(*es_split(k)))}"
+            )
 
     return acopy
 
@@ -334,7 +338,7 @@ def computeIcfs(abundancies, logger=None):
     """
     icf = pn.ICF()
     allIcf = icf.getElemAbundance(
-        renameIons({a[0]: a[1][0] for a in abundancies.items()}), IcfNameList()
+        renameIons({a[0]: a[1][0] for a in abundancies.items()}, logger), IcfNameList()
     )
 
     return allIcf
@@ -418,14 +422,16 @@ def computeIcfsWithErrors(abundancies, logger=None):
         element = getElementFromIcfName(icf_name)
 
         # Find all contributing ions for this element
-        contributing_ions = [ion for ion in renamed_abunds if ion.startswith(element)]
-        # if not contributing_ions:
-        #     continue
+        # eg when ion is 'O;, then we add 'O2', 'O3', ... but NOT 'O' (ie O1)
+        contributing_ions = [
+            ion for ion in renamed_abunds if ion.startswith(element) and ion != element
+        ]
+        if not contributing_ions:
+            continue
+
         logger.debug(f"Contributing ions for {element}: {contributing_ions}")
 
         ionic_sum = sum(renamed_abunds[ion] for ion in contributing_ions)
-        # if ionic_sum == 0:
-        #    continue
 
         # Step 1: ionic part of uncertainty (quadrature of fractional contributions)
         ionic_var = 0.0

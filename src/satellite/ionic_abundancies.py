@@ -140,6 +140,9 @@ def computeIonicAbundancies(fitsd, tene_dict, pnObs, pnErrObs, logger):
         pn_element = sn.objectIntensityPyNebCode(
             entry["element"], entry["spectrum"], entry["atomic"], logger
         )
+        logger.debug(
+            f"computeIonicAbundancies: entry {entry["element"]}{entry["spectrum"]}{entry["atomic"]} transformed to {pn_element}"
+        )
         sabd = pn_atom.getIonAbundance(
             int_ratio=pnObs.getIntens(0)[pn_element],
             tem=reftene["sT"],
