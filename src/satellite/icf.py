@@ -516,7 +516,7 @@ def printIcfs(icfs, elem_abundancies, fn, logger):
         return element_icfs
 
     # first pass: write everything but the first line. count max width per slit
-    max_col_widths = [0] * len(columns)
+    max_col_widths = [(0, 0)] * len(columns)
     lines = [[] for _ in unique_elements]
 
     # iterate for every element in unique_elements
@@ -538,7 +538,7 @@ def printIcfs(icfs, elem_abundancies, fn, logger):
                 for k, v in element_icfs.items():
                     msg = "{:}:{:15.9e}/{:15.9e} ".format(k, v[0], v[1])
                     colstr += f"{msg}"
-                max_col_widths[j] = max(max_col_widths[j], len(colstr) - 1)
+                max_col_widths[j] = (col, max(max_col_widths[j][1], len(colstr) - 1))
                 lines[line_nr].append(colstr)
 
     # remove empty sublists
@@ -549,25 +549,28 @@ def printIcfs(icfs, elem_abundancies, fn, logger):
         print("Slit ", file=fout, end="")
         for j, c in enumerate(max_col_widths):
             print(
-                "-----{:2d}{:s} ".format(columns[j], "-" * (c - 7)), file=fout, end=""
+                "-----{:2d}{:s} ".format(columns[j], "-" * (c[1] - 7)),
+                file=fout,
+                end="",
             )
         print("", file=fout)
 
         # print omega and u values
+        print(icfs)
         print(f"Omega ", end="", file=fout)
         for j, c in enumerate(max_col_widths):
-            print(f"{icfs[j]['omega']:30.9e}", end="", file=fout)
+            print(f"{icfs[c[0]]['omega']:30.9e}", end="", file=fout)
         print("", file=fout)
         print(f"U     ", end="", file=fout)
         for j, c in enumerate(max_col_widths):
-            print(f"{icfs[j]['U']:30.9e}", end="", file=fout)
+            print(f"{icfs[c[0]]['U']:30.9e}", end="", file=fout)
         print("", file=fout)
 
         # print(lines)
         for j, line in enumerate(lines):
             print(f"{line[0]:<5s} ", file=fout, end="")
             for lc in zip(line[1:], max_col_widths):
-                print(f"{lc[0]:<{lc[1]}},", file=fout, end="")
+                print(f"{lc[0]:<{lc[1][1]}},", file=fout, end="")
             print("", file=fout)
         print("", file=fout)
     return fn

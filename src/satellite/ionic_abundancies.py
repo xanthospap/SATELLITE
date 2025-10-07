@@ -214,7 +214,11 @@ def printIonicAbundancies(dict_of_abundancies, fn, logger):
         # write first line, i.e. column keys
         print("{:15s}".format("Slit Nr."), file=fout, end="")
         for col in columns:
-            print("{:->6d}{:25s} ".format(col + offset, "-" * 25), file=fout, end="")
+            try:
+                cpo = str(col + offset)
+            except:
+                cpo = str(col) + str(offset)
+            print("{:->6s}{:25s} ".format(cpo, "-" * 25), file=fout, end="")
         print("", file=fout)
 
         # iterate for every line in unique_lines

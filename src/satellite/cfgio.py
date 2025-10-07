@@ -134,6 +134,20 @@ def configSpecificSlitAnalysis(dct: dict):
     return slits
 
 
+def configRadialSlitAnalysis(dct: dict):
+    d = dct["analysis"]["radial_slit_analysis"]
+    # no specific-slit analysis
+    if d["skip"] in ["1", "True", "true"]:
+        return None
+    # return a list of dictionaries, one for each slit
+    slits = []
+    d = dct["analysis"]
+    for slit in d["radial_slit_analysis"]["slits"]:
+        ps = [int(x) for x in slit.split(",")]
+        slits.append({"PA": ps[0], "w": ps[1], "h": ps[2], "x": ps[3], "y": ps[4]})
+    return slits
+
+
 def configAngularSlitAnalysis(dct: dict):
     d = dct["analysis"]["angular_slit_analysis"]
     # no specific-slit analysis

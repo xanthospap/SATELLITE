@@ -249,7 +249,7 @@ if __name__ == "__main__":
         # Specific Slit Analysis
         radial_slit.radial_slit_analysis(
             fits_info,
-            cfgio.configSpecificSlitAnalysis(config),
+            cfgio.configRadialSlitAnalysis(config),
             cfgio.configElementRatiosList(config),
             cfgio.configDensityDiagnostics(config),
             cfgio.configTemperatureDiagnostics(config),
