@@ -116,6 +116,10 @@ def doAngularSlitAnalysis(dct: dict):
     return not dct["analysis"]["angular_slit_analysis"]["skip"]
 
 
+def doRadialSlitAnalysis(dct: dict):
+    return not dct["analysis"]["radial_slit_analysis"]["skip"]
+
+
 def configSpecificSlitAnalysis(dct: dict):
     d = dct["analysis"]["specific_slit_analysis"]
     # no specific-slit analysis
