@@ -108,6 +108,14 @@ def elementInputDict(fitsd: list, reference_element: dict, logger=None):
     )
 
 
+def doSpecificSlitAnalysis(dct: dict):
+    return not dct["analysis"]["specific_slit_analysis"]["skip"]
+
+
+def doAngularSlitAnalysis(dct: dict):
+    return not dct["analysis"]["angular_slit_analysis"]["skip"]
+
+
 def configSpecificSlitAnalysis(dct: dict):
     d = dct["analysis"]["specific_slit_analysis"]
     # no specific-slit analysis
@@ -115,9 +123,35 @@ def configSpecificSlitAnalysis(dct: dict):
         return None
     # return a list of dictionaries, one for each slit
     slits = []
-    for slit in d["slits"]:
+    d = dct["analysis"]
+    for slit in d["specific_slit_analysis"]["slits"]:
         ps = [int(x) for x in slit.split(",")]
         slits.append({"PA": ps[0], "w": ps[1], "h": ps[2], "x": ps[3], "y": ps[4]})
+    return slits
+
+
+def configAngularSlitAnalysis(dct: dict):
+    d = dct["analysis"]["angular_slit_analysis"]
+    # no specific-slit analysis
+    if d["skip"] in ["1", "True", "true"]:
+        return None
+    # return a list of dictionaries, one for each slit
+    slits = []
+    d = dct["analysis"]
+    for slit in d["angular_slit_analysis"]["slits"]:
+        # - start_angle, stop_angle, step_angle, width, height, xcrd, ycrd
+        ps = [int(x) for x in slit.split(",")]
+        slits.append(
+            {
+                "start_angle": ps[0],
+                "stop_angle": ps[1],
+                "step_angle": ps[2],
+                "w": ps[3],
+                "h": ps[4],
+                "x": ps[5],
+                "y": ps[6],
+            }
+        )
     return slits
 
 
@@ -182,12 +216,15 @@ def indexOf(atom: str, spectrum: str, atomic_number: int, fitsd: list):
 
 
 def configElementRatiosList(dct: dict):
-    return dct["analysis"]["specific_slit_analysis"]["log_ratios"]
+    # return dct["analysis"]["specific_slit_analysis"]["log_ratios"]
+    return dct["analysis"]["log_ratios"]
 
 
 def configDensityDiagnostics(dct: dict):
-    return dct["analysis"]["specific_slit_analysis"]["density_diagnostics"]
+    # return dct["analysis"]["specific_slit_analysis"]["density_diagnostics"]
+    return dct["analysis"]["density_diagnostics"]
 
 
 def configTemperatureDiagnostics(dct: dict):
-    return dct["analysis"]["specific_slit_analysis"]["temperature_diagnostics"]
+    # return dct["analysis"]["specific_slit_analysis"]["temperature_diagnostics"]
+    return dct["analysis"]["temperature_diagnostics"]

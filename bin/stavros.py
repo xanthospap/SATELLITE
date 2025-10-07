@@ -4,6 +4,7 @@ from satellite import version
 from satellite import cfgio
 from satellite import roman
 from satellite import specific_slit
+from satellite import angular_slit
 from satellite import satlogger
 from satellite import plotters
 
@@ -199,26 +200,52 @@ if __name__ == "__main__":
         if args.missing_fits_is_error:
             sys.exit(1)
 
-    # Specific Slit Analysis
-    specific_slit.specific_slit_analysis(
-        fits_info,
-        cfgio.configSpecificSlitAnalysis(config),
-        cfgio.configElementRatiosList(config),
-        cfgio.configDensityDiagnostics(config),
-        cfgio.configTemperatureDiagnostics(config),
-        args.pn_extinction,
-        args.pn_atomic_data,
-        args.monte_carlo_fake_obs,
-        args.max_allowed_mc_tries,
-        args.pn_rv,
-        args.energy_parameter,
-        args.intensities_out,
-        args.ratios_out,
-        args.diagnostics_out,
-        args.abundancies_out,
-        args.total_abundancies_out,
-        logger,
-    )
+    if cfgio.doSpecificSlitAnalysis(config):
+        print(
+            f">>>>>>>>>>in specific slit analysis because got {cfgio.doSpecificSlitAnalysis(config)}"
+        )
+        # Specific Slit Analysis
+        specific_slit.specific_slit_analysis(
+            fits_info,
+            cfgio.configSpecificSlitAnalysis(config),
+            cfgio.configElementRatiosList(config),
+            cfgio.configDensityDiagnostics(config),
+            cfgio.configTemperatureDiagnostics(config),
+            args.pn_extinction,
+            args.pn_atomic_data,
+            args.monte_carlo_fake_obs,
+            args.max_allowed_mc_tries,
+            args.pn_rv,
+            args.energy_parameter,
+            args.intensities_out,
+            args.ratios_out,
+            args.diagnostics_out,
+            args.abundancies_out,
+            args.total_abundancies_out,
+            logger,
+        )
+
+    if cfgio.doAngularSlitAnalysis(config):
+        # Angular Slit Analysis
+        angular_slit.angular_slit_analysis(
+            fits_info,
+            cfgio.configAngularSlitAnalysis(config),
+            cfgio.configElementRatiosList(config),
+            cfgio.configDensityDiagnostics(config),
+            cfgio.configTemperatureDiagnostics(config),
+            args.pn_extinction,
+            args.pn_atomic_data,
+            args.monte_carlo_fake_obs,
+            args.max_allowed_mc_tries,
+            args.pn_rv,
+            args.energy_parameter,
+            args.intensities_out,
+            args.ratios_out,
+            args.diagnostics_out,
+            args.abundancies_out,
+            args.total_abundancies_out,
+            logger,
+        )
 
     # if needed draw the plots ...
     if not args.no_plots:
