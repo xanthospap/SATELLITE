@@ -128,6 +128,13 @@ def radial_slit_analysis(
     global_element_abundancies = {}
     global_icfs = {}
 
+    if len(slits) < 1:
+        logger.error(f'No slits given; stopping now!')
+        raise RuntimeError('No slits found to process!')
+    if len(fitsd) < 1:
+        logger.error(f'No fits given/found; stopping now!')
+        raise RuntimeError('No FITS files found to process!')
+
     # for every slit
     for slit_idx, slit in enumerate(slits):
         print("Processing slit {:d}/{:d}".format(slit_idx + 1, len(slits)))
@@ -143,6 +150,10 @@ def radial_slit_analysis(
 
         # how many rows per slit/submatrix ?
         rows = slit_subm[0][0].shape[0]
+        if rows < 1:
+            logger.error(f'Height of slit is {rows}! Cannot operate on zero rows, skipping slit')
+            continue
+
         for row_idx in range(rows):
             print(f"Processing row {row_idx}/{rows}")
             # copy of dictionary
