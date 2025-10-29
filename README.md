@@ -277,3 +277,8 @@ National Observatory of Athens,
     Stavros Akras, xanthos@mail.ntua.gr
     May, 2024
 ```
+
+# Science behind SATELLITE
+
+To read more on the scinetific aspects underlying SATELLITE's analysis toolchina, you 
+can visit the [original SATELLITE](https://github.com/StavrosAkras/SATELLITE) repository.
