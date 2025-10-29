@@ -280,5 +280,5 @@ National Observatory of Athens,
 
 # Science behind SATELLITE
 
-To read more on the scinetific aspects underlying SATELLITE's analysis toolchina, you 
+To read more on the scientific aspects underlying SATELLITE's analysis toolchain, you 
 can visit the [original SATELLITE](https://github.com/StavrosAkras/SATELLITE) repository.
