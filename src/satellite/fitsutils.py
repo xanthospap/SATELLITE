@@ -31,6 +31,11 @@ def loadFitsImageData(fn: str):
 
 
 def getVerticalSlit(mat, row: int, col: int, width: int, height: int, logger):
+    """WARNING
+    Keep this function consistent with
+    def _slit_box_in_rotated_rc(row, col, width, height)
+    defined below
+    """
     n, m = mat.shape
     if row >= n or col >= m:
         raise RuntimeError(
@@ -58,7 +63,7 @@ def getVerticalSlit(mat, row: int, col: int, width: int, height: int, logger):
             "[ERROR] Invalid slit width! The slit requested would fall outside the image\n"
         )
     h = height // 2
-    if (h != 1) and (row - h < 0 or col + h >= n):
+    if (h != 1) and (row - h < 0 or row + h >= n):
         if logger:
             logger.error(
                 "Invalid slit height! Requested height {:} centered at {:} but matrix height is {:}".format(
@@ -71,6 +76,7 @@ def getVerticalSlit(mat, row: int, col: int, width: int, height: int, logger):
     l, r = (col - w, col + w + 1)
     t, b = (row - h, row + h + 1)
     return mat[t:b, l:r].flatten() if (width <= 1 or height <= 1) else mat[t:b, l:r]
+
 
 def getVerticalSlitPolygon(mat, row: int, col: int, width: int, height: int, logger):
     n, m = mat.shape
@@ -113,7 +119,8 @@ def getVerticalSlitPolygon(mat, row: int, col: int, width: int, height: int, log
     l, r = (col - w, col + w + 1)
     t, b = (row - h, row + h + 1)
     # return mat[t:b, l:r].flatten() if (width <= 1 or height <= 1) else mat[t:b, l:r]
-    return (row, col), (t,l), (t,r-1), (b-1, l), (b-1,r-1)
+    return (row, col), (t, l), (t, r - 1), (b - 1, l), (b - 1, r - 1)
+
 
 def setCenterPixel(mat, row: int, col: int, rectangular=False, missing_vals=0):
     """
@@ -152,32 +159,82 @@ def rotate2d_00(array, angle_deg):
     )  # reshape=True preserves full content
 
 
+def _rotation_matrix(angle_deg):
+    a = np.deg2rad(angle_deg)
+    ca, sa = np.cos(a), np.sin(a)
+    # Row/col convention: vectors are [row, col]
+    return np.array([[ca, -sa], [sa, ca]], dtype=float)
+
+
 #  rotate around (centerx, centery) in counterclockwise fashion by angle angle_deg
 def rotate2d(array, angle_deg, centerx=0, centery=0):
     if centerx == centery and centerx == 0:
-        return rotate2d_00(array, angle_deg)
+        return rotate2d_00(array, -1.0 * angle_deg)
 
-    angle_rad = np.deg2rad(angle_deg)
-    cos_a = np.cos(angle_rad)
-    sin_a = np.sin(angle_rad)
+    # angle_rad = np.deg2rad(angle_deg)
+    # cos_a = np.cos(angle_rad)
+    # sin_a = np.sin(angle_rad)
 
     # Rotation matrix
-    rotation_matrix = np.array([[cos_a, -sin_a], [sin_a, cos_a]])
+    # rotation_matrix = np.array([[cos_a, -sin_a], [sin_a, cos_a]])
+    R = _rotation_matrix(angle_deg)
 
     # Compute the offset to keep the rotation centered at `center`
     center = np.asarray([centerx, centery])
-    offset = center - rotation_matrix @ center
+    offset = center - R @ center
 
     # Perform affine transformation
     rotated = affine_transform(
         array,
-        rotation_matrix,
+        R,
         offset=offset,
         order=1,  # linear interpolation
         mode="constant",
         cval=0.0,
     )
     return rotated
+
+
+def _slit_box_in_rotated_rc(row, col, width, height):
+    """
+    Returns the four corners (row, col) of the slit rectangle
+    in the *rotated-image* coordinate frame (pixel centers).
+    Corner order: TL, TR, BR, BL.
+
+    WARNING!
+    --------
+    This should do exactly what getVerticalSlit does, but not operate on a
+    matrix.
+    """
+    # enforce odd width like your getVerticalSlit
+    if width % 2 == 0:
+        width += 1
+    w = width // 2
+    h = height // 2
+
+    # getVerticalSlit uses [t:b, l:r] with r/b exclusive
+    t, b = row - h, row + h + 1
+    l, r = col - w, col + w + 1
+
+    # Corners at pixel centers (inclusive indices use -1 on the r/b side)
+    TL = np.array([t, l], dtype=float)
+    TR = np.array([t, r - 1], dtype=float)
+    BR = np.array([b - 1, r - 1], dtype=float)
+    BL = np.array([b - 1, l], dtype=float)
+    return np.vstack([TL, TR, BR, BL])
+
+
+def corners_in_original_from_rotated(corners_rc_rot, center_rc, angle_used_deg):
+    """
+    Map points from the *rotated image* back to *original image* pixel coords.
+    If the rotated image was produced by rotating ORIGINAL by angle_used_deg
+    about center_rc, the inverse mapping uses -angle_used_deg.
+    """
+    C = np.asarray(center_rc, dtype=float)
+    R_inv = _rotation_matrix(-angle_used_deg)  # inverse rotation
+    # (points - C) @ R_inv^T  + C   since our points are row vectors
+    return (corners_rc_rot - C) @ R_inv.T + C
+
 
 def testGetVerticalSlit(fits_fn, slit):
     def getFitsSlit(fits_fn, slit):

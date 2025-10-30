@@ -220,6 +220,7 @@ if __name__ == "__main__":
             args.diagnostics_out,
             args.abundancies_out,
             args.total_abundancies_out,
+            "specific_slit_corners.dat",
             logger,
         )
 
@@ -242,11 +243,12 @@ if __name__ == "__main__":
             args.diagnostics_out,
             args.abundancies_out,
             args.total_abundancies_out,
+            "angular_slit_corners.dat",
             logger,
         )
 
     if cfgio.doRadialSlitAnalysis(config):
-        # Specific Slit Analysis
+        # Radial Slit Analysis
         radial_slit.radial_slit_analysis(
             fits_info,
             cfgio.configRadialSlitAnalysis(config),
@@ -264,6 +266,7 @@ if __name__ == "__main__":
             args.diagnostics_out,
             args.abundancies_out,
             args.total_abundancies_out,
+            "radial_slit_corners.dat",
             logger,
         )
 

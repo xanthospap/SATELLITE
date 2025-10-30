@@ -28,6 +28,26 @@ def getFitsSlit(fits_fn: str, slit: dict, logger=None):
     )
 
 
+def getSlitCorners(fits_fn: str, slit: dict, logger=None):
+    row0 = slit["y"] - 1
+    col0 = slit["x"] - 1
+    width = slit["w"]
+    height = slit["h"]
+    angle_used = -1.0 * slit["PA"]  # this is exactly what we pass to rotate2d()
+    # Corners in ROTATED frame (the rectangle we crop)
+    corners_rot = fs._slit_box_in_rotated_rc(row0, col0, width, height)
+    # Map back to ORIGINAL frame
+    corners_orig = fs.corners_in_original_from_rotated(
+        corners_rc_rot=corners_rot,
+        center_rc=np.array([row0, col0], dtype=float),
+        angle_used_deg=angle_used,
+    )
+    # Optional: clip to image bounds (still floats, just constrained)
+    # corners_orig[:, 0] = np.clip(corners_orig[:, 0], 0, n - 1)
+    # corners_orig[:, 1] = np.clip(corners_orig[:, 1], 0, m - 1)
+    return corners_rot, corners_orig
+
+
 def extract_ion(label):
     """Example:
     t = "[OI] 5577/6300+"
@@ -71,6 +91,7 @@ def specific_slit_analysis(
     diagnostics_out: str,
     abundancies_out: str,
     total_abundancies_out: str,
+    corners_out: str,
     logger,
 ):
 
@@ -120,6 +141,9 @@ def specific_slit_analysis(
     global_element_abundancies = {}
     global_icfs = {}
 
+    # A file to write out corners
+    fcrn = open(corners_out, "w")
+
     # for every slit
     for slit_idx, slit in enumerate(slits):
         print("Processing slit {:d}/{:d}".format(slit_idx + 1, len(slits)))
@@ -140,7 +164,13 @@ def specific_slit_analysis(
             sm = np.sum(np.sum(ar))
             cpd[idx]["eslit_sum"] = sm
 
+        # Get corners (rotated-frame & original-frame)
+        corn_rot, corn_orig = getSlitCorners(fits["fns"], slit, None)
+        for name, p in zip(["TL", "TR", "BR", "BL"], corn_orig):
+            print(f"  {slit_idx} {name} {p[0]:.3f}, {p[1]:.3f}", file=fcrn)
+
         ## <-- End Looping FITS --> ##
+        fcrn.close()
 
         # compile the intensities data file (for PyNeb) and write the test.dat file.
         # TODO we do not need to pass the cpd list here. We can pass a more simple/small

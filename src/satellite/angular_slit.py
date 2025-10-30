@@ -28,6 +28,7 @@ def angular_slit_analysis(
     diagnostics_out: str,
     abundancies_out: str,
     total_abundancies_out: str,
+    corners_out: str,
     logger,
 ):
     # slits should be a one-element list, of type:
@@ -62,5 +63,6 @@ def angular_slit_analysis(
         diagnostics_out,
         abundancies_out,
         total_abundancies_out,
+        corners_out,
         logger,
     )

@@ -28,6 +28,26 @@ def getFitsSlit(fits_fn: str, slit: dict, logger=None):
     )
 
 
+def getSlitCorners(fits_fn: str, slit: dict, logger=None):
+    row0 = slit["y"] - 1
+    col0 = slit["x"] - 1
+    width = slit["w"]
+    height = slit["h"]
+    angle_used = -1.0 * slit["PA"]  # this is exactly what we pass to rotate2d()
+    # Corners in ROTATED frame (the rectangle we crop)
+    corners_rot = fs._slit_box_in_rotated_rc(row0, col0, width, height)
+    # Map back to ORIGINAL frame
+    corners_orig = fs.corners_in_original_from_rotated(
+        corners_rc_rot=corners_rot,
+        center_rc=np.array([row0, col0], dtype=float),
+        angle_used_deg=angle_used,
+    )
+    # Optional: clip to image bounds (still floats, just constrained)
+    # corners_orig[:, 0] = np.clip(corners_orig[:, 0], 0, n - 1)
+    # corners_orig[:, 1] = np.clip(corners_orig[:, 1], 0, m - 1)
+    return corners_rot, corners_orig
+
+
 def extract_ion(label):
     """Example:
     t = "[OI] 5577/6300+"
@@ -79,6 +99,7 @@ def radial_slit_analysis(
     diagnostics_out: str,
     abundancies_out: str,
     total_abundancies_out: str,
+    corners_out: str,
     logger,
 ):
 
@@ -129,15 +150,23 @@ def radial_slit_analysis(
     global_icfs = {}
 
     if len(slits) < 1:
-        logger.error(f'No slits given; stopping now!')
-        raise RuntimeError('No slits found to process!')
+        logger.error(f"No slits given; stopping now!")
+        raise RuntimeError("No slits found to process!")
     if len(fitsd) < 1:
-        logger.error(f'No fits given/found; stopping now!')
-        raise RuntimeError('No FITS files found to process!')
+        logger.error(f"No fits given/found; stopping now!")
+        raise RuntimeError("No FITS files found to process!")
+
+    # A file to write out corners
+    fcrn = open(corners_out, "w")
 
     # for every slit
     for slit_idx, slit in enumerate(slits):
         print("Processing slit {:d}/{:d}".format(slit_idx + 1, len(slits)))
+
+        # Get corners (rotated-frame & original-frame)
+        corn_rot, corn_orig = getSlitCorners(fits["fns"], slit, None)
+        for name, p in zip(["TL", "TR", "BR", "BL"], corn_orig):
+            print(f"  {slit_idx} {name} {p[0]:.3f}, {p[1]:.3f}", file=fcrn)
 
         # List of submatrices (whole slit), for every FITS file
         slit_subm = []
@@ -151,7 +180,9 @@ def radial_slit_analysis(
         # how many rows per slit/submatrix ?
         rows = slit_subm[0][0].shape[0]
         if rows < 1:
-            logger.error(f'Height of slit is {rows}! Cannot operate on zero rows, skipping slit')
+            logger.error(
+                f"Height of slit is {rows}! Cannot operate on zero rows, skipping slit"
+            )
             continue
 
         for row_idx in range(rows):
@@ -300,6 +331,7 @@ def radial_slit_analysis(
             # global_icfs[slit_idx] = sf.computeManualIcfs(elemspec_abundancies, logger)
 
         ## <-- End Looping Slits --> ##
+        fcrn.close()
 
         print(f"All rows done for slit #{slit_idx} ... writing files ...")
         if len(slits) > 1:
