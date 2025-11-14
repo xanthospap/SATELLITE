@@ -278,6 +278,16 @@ National Observatory of Athens,
     Feb, 2024
 ```
 
+### SAT_extra_blended.py
+
+The code informs the user about the contribution of `He I`  and `Ar IV` at λ4712 from Benjamin et al. 1999 (https://iopscience.iop.org/article/10.1086/306923/pdf).
+
+In order to run the code, assign a value to the variables:
+* `I_4712_obs` → observed intensity at λ4712 relative to Hb=100 (8th code line)
+* `Te_obs` → electron temperature in K (9th code line)
+* `ne_obs` → electron density in cm^-3 (10th code line)
+
+
 # Science behind SATELLITE
 
 To read more on the scientific aspects underlying SATELLITE's analysis toolchain, you 
