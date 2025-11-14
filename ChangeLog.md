@@ -3,6 +3,7 @@
 - [x] Added parameter (cmd) `-EP` for energy parameter. 
 - [x] Added extra line for F(Hb) in line_instensities.dat
 - [x] Added extra plot for F(Hb) (line_instensities).
+- [x] Added module and (external) script for result plotting
 
 # Version 1.3b1
 
