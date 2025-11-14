@@ -4,6 +4,8 @@
 - [x] Added extra line for F(Hb) in line_instensities.dat
 - [x] Added extra plot for F(Hb) (line_instensities).
 - [x] Added module and (external) script for result plotting
+- [x] Added (external) script SATELLITE_PCA.py
+- [x] Added (external) script SATELLITE_voronoi.py
 
 # Version 1.3b1
 
@@ -13,6 +15,11 @@
 - [x] All y-axis ticks are now in scientific format.
 - [x] Changed default matplotlib style-sheet to 'default'.
 - [x] Optionally plot everything with barplots, except from total aundancies. In `bin/satellite_plot.py` bar plots are triggered with `--bar-plots` and in `bin/stavros.py` with `--bar-plots`.
+- [x] Added (external) script SATELLITE_corr_ArIVHeI4712_blended_lines.py
+- [x] Added (external) script SATELLITE_corr_NIIOII_for_recombination.py
+- [x] Added (external) script SATELLITE_TeHeI_recombination.py
+- [x] Added (external) script SATELLITE_TeHeI_2D.py
+- [x] Added (external) script SATELLITE_TePaschen_2D.py
 
 # Version 1.2b1
 
