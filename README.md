@@ -235,7 +235,7 @@ National Observatory of Athens,
 
     Send bug reports to:
     Stavros Akras, xanthos@mail.ntua.gr
-    May, 2024
+    Nov, 2024
 
 ```
 
@@ -275,7 +275,7 @@ National Observatory of Athens,
 
     Send bug reports to:
     Stavros Akras, xanthos@mail.ntua.gr
-    May, 2024
+    Nov, 2024
 ```
 
 # Science behind SATELLITE
