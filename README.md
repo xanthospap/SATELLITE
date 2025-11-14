@@ -278,15 +278,117 @@ National Observatory of Athens,
     Feb, 2024
 ```
 
-### SAT_extra_blended.py
+### SATELLITE_corr_ArIVHeI4712_blended_lines.py
 
-The code informs the user about the contribution of `He I`  and `Ar IV` at λ4712 from Benjamin et al. 1999 (https://iopscience.iop.org/article/10.1086/306923/pdf).
+This script corrects the intensity of the `Ar IV λ4712` emission line for the contribution of the `HeI λ4711` emission line using the work by Benjamin et al. (1999)
+(https://iopscience.iop.org/article/10.1086/306923/pdf). The script takes as input, single values. Therefore, it is suitable for the Specific Slit and Angular analysis modules.
 
 In order to run the code, assign a value to the variables:
 * `I_4712_obs` → observed intensity at λ4712 relative to Hb=100 (8th code line)
 * `Te_obs` → electron temperature in K (9th code line)
 * `ne_obs` → electron density in cm^-3 (10th code line)
 
+*Developed at May 2024.*
+
+### SATELLITE_corr_NIIOII_for_recombination.py
+
+This script corrects the intensity of the `N II λ5755` and `O II λλ7320,7330` emission lines for the recombination contribution according the works by  Liu et al. (2000)
+(https://ui.adsabs.harvard.edu/abs/2000MNRAS.312..585L) and Garcia-Rojas et al. (2021)
+ (https://ui.adsabs.harvard.edu/abs/2022MNRAS.510.5444G). The script takes as input, single values. Therefore, it is suitable for the Specific Slit and Angular analysis modules.
+
+In order to run the code, assign a value to the variables:
+* `I_5755` → observed intensity at λ5755 relative to Hb=100 (8th code line)
+* `I_5679` → observed intensity at λ5679 relative to Hb=100 (9th code line)
+* `abund_N2_5679` → Ν+2 ionic abundance ORLs `N II` lines or from CELs `N III` lines (13th code line)
+* `Te` → electron temperature in K (15th code line)
+* `ne` → electron density in cm^-3 (16th code line)
+
+* `I_7320` →  observed intensity at λ7320 relative to Hb=100 (51th code line)
+* `I_7330` →  observed intensity at λ7330 relative to Hb=100 (52th code line)
+* `I_4649` →  observed intensity at λ4649 relative to Hb=100 (55th code line)
+* `I_4650` →  observed intensity at λ4650 relative to Hb=100 (56th code line)
+* `abund_O2` →  O+2 ionic abundance (61th code line)
+* `Te` → electron temperature in K (63th code line)
+* `ne` → electron density in cm^-3 (64th code line)
+
+*Developed Jul 2024.*
+
+### SATELLITE_TeHeI_recombination.py
+
+The script estimates electron temperature using the `He I` recombination lines according the works from Zhang et al. (2005A) (https://ui.adsabs.harvard.edu/abs/2005MNRAS.358..457Z), Zhang et al. (2005B) (https://ui.adsabs.harvard.edu/abs/2005RMxAC..23...15Z) and Mendez-Delgado et al. (2021) (https://ui.adsabs.harvard.edu/abs/2021MNRAS.502.1703M).  The script takes as input, single values. Therefore, it is suitable for the Specific Slit and Angular analysis modules.
+
+In order to run the code, assign a value to the variables:
+* `I_7281` → observed intensity at λ7281 relative to Hb=100 (17th code line)
+* `I_6678` → observed intensity at λ6678 relative to Hb=100 (18th code line)
+* `ne_input` → electron density in cm^-3 (63th code line)
+
+The code also estimates electron temperature from Balmer jump at λ3645.
+
+In order to run the code, assign a value to the variables:
+* `Te` → electron temperature in K (75th code line)
+* `ne` → electron density in cm^-3 (76th code line)
+* `abund_He1` → He+ ionic abundance (77th code line)
+* `abund_He2` → He+2 ionic abundance (78th code line)
+
+The code also estimates electron temperature from Paschen jump at λ8200.
+
+In order to run the code, assign a value to the variables:
+* `ne` → electron density in cm^-3 (138th code line)
+* `abund_He1` → He+ ionic abundance (139th code line)
+* `abund_He2` → He+2 ionic abundance (140th code line)
+* `jump` →  the Balmer jump as measured by the user in erg/s/cm^2
+* `I_P11` → intensity in erg/s/cm^2 of Paschen 11 emission line
+
+*Developed Jul 2024.*
+
+### SATELLITE_PCA.py
+
+The script uses emission line maps from IFU and applies a principal component analysis (PCA). The script takes as input, 2D maps (fits images). Therefore, it is suitable for the 2D module.
+
+To run the code, assing the full path of a folder with all the emission lines in the following variables:
+* image_names and data (8th and 14th lines)
+
+*Developed Feb 2025.*
+
+### SATELLITE_voronoi.py
+
+The script takes a  2D map (fits_file) as an input and creates the corresponding voronoi map (output_fits) given a specific signal-to-noise ratio (based on the fits_file/error_fits ratio). The script takes as input, 2D maps (fits images). Therefore, it is suitable for the 2D module.
+
+To run the code, assign a value to the following variables:  
+* target_snr, the requested signal-to-noise ratio (48th line), and
+
+the required input and outout files in the apply_voronoi_binning function: 
+* input files: the fits_file (the map for the Voronoi application) and the error_fits (the error of the map) (111st line). 
+* the output files: output_fits, output_values_fits, output_sum_fits (113th lines). 
+
+** PS:The script does not always work properly. It depends on the given target_snr **
+
+*Developed May 2025.*
+
+### SATELLITE_TeHeI_2D.py
+
+The script estimates electron temperature from the `He I` recombination lines based on the work by Mendez-Delgado et al. (2021) (https://ui.adsabs.harvard.edu/abs/2021MNRAS.502.1703M).  The script takes as input, 2D maps (fits images). Therefore, it is suitable for the 2D module.
+
+To run the script provide 2D maps in the following variables: 
+* `ratio.fits` (2D map of the ratio, 15th line)
+* `ne_fits` (2D map of electron density fits, (16th  line)
+
+*Developed Sep 2024.*
+
+### SATELLITE_TePaschen_2D.py
+
+The script estimates electron temperature from the Paschen jump at λ8200.
+
+To run the script, assign a value to the variables:
+* `den` →  electron density in cm^-3 (38th line)
+* `Hep` →   He+ ionic abundance (39th line)
+* `Hepp` →  He+2 ionic abundance (40th line)
+
+and provide the 2D maps (fits files) in the following variables:
+* `cont` (2D map cont_s_sized.fits, 41st line) 
+* `HI` (Paschen 9 extinction corrected map,  42nd line)
+
+*Developed Sep 2024.*
 
 # Science behind SATELLITE
 
