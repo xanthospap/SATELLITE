@@ -130,7 +130,7 @@ def computeIonicAbundancies(fitsd, tene_dict, pnObs, pnErrObs, logger):
         reftene = ref_tene_pair(refTenNe2PyNebPair(entry["ref_tene"]))
         if reftene is None:
             logger.error(
-                "ERROR Failed finding reference Te/Ne pair for ionic abundancies!"
+                f"ERROR Failed finding reference Te/Ne pair {entry["ref_tene"]} for ionic abundancies!"
             )
             return
         # pn_atom = get_atom_model_obsolete(

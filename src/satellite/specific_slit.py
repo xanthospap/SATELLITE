@@ -84,6 +84,8 @@ def specific_slit_analysis(
     pn_atomic_data: str,
     monte_carlo_fake_obs: int,
     max_nan_in_diagnostics_allowed_percentage: int,
+    #       args.monte_carlo_fake_obs,
+    #       args.max_allowed_mc_tries,
     pn_rv: float,
     energy_parameter: float,
     intensities_out: str,
@@ -169,9 +171,6 @@ def specific_slit_analysis(
         for name, p in zip(["TL", "TR", "BR", "BL"], corn_orig):
             print(f"  {slit_idx} {name} {p[0]:.3f}, {p[1]:.3f}", file=fcrn)
 
-        ## <-- End Looping FITS --> ##
-        fcrn.close()
-
         # compile the intensities data file (for PyNeb) and write the test.dat file.
         # TODO we do not need to pass the cpd list here. We can pass a more simple/small
         # list.
@@ -192,7 +191,7 @@ def specific_slit_analysis(
         nan_diagnostics = True
         times_nan_encountered = 0
         MAX_NAN_IN_DIAGNOSTICS_ALLOWED = (
-            max_nan_in_diagnostics_allowed_percentage * monte_carlo_fake_obs // 100
+            max_nan_in_diagnostics_allowed_percentage * monte_carlo_fake_obs // 10
         )
         # MAX_NAN_IN_DIAGNOSTICS_ALLOWED cannot be zeros, or else we won;t get into the loop.
         MAX_NAN_IN_DIAGNOSTICS_ALLOWED = max(1, MAX_NAN_IN_DIAGNOSTICS_ALLOWED)
@@ -300,6 +299,7 @@ def specific_slit_analysis(
         # global_icfs[slit_idx] = sf.computeManualIcfs(elemspec_abundancies, logger)
 
     ## <-- End Looping Slits --> ##
+    fcrn.close()
 
     print("All slits done ... writing files ...")
     si.printIntensities(global_intensities, intensities_out, logger)
