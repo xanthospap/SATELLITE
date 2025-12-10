@@ -1,9 +1,10 @@
 import satellite.roman as sr
 import pyneb as pn
+import numpy as np
 import re
 
 def closestPyNebElement(element: str, atomic_number: int, logger=None) -> str:
-    """ Given an alelemnt and its atomic number, find the closest 
+    """ Given an an elemnt and its atomic number, find the closest 
         corresponding emission line available in PyNeb
 
         Note
@@ -51,6 +52,26 @@ def closestPyNebElement(element: str, atomic_number: int, logger=None) -> str:
             atomic_number, element, pn_wl))
     return pn_wl
 
+def unlisted(atom, spectrum_int, wavelength, logger=None):
+    
+    # if logger: logger.info(f'Looking for a data file to load {atom}{spectrum_int}_{wavelength} ...')
+    entries = pn.atomicData.getDataFile()[f"{atom}{spectrum_int}"]
+    if 'atom' in entries:
+        #if entries['atom'] not in pn.atomicData.getDataFile('{atom}{spectrum}'):
+        pn.atomicData.setDataFile(entries['atom'])
+        if logger: logger.info(f"Loaded {entries['atom']}")
+    if 'coll' in entries:
+        #if entries['coll'] not in pn.atomicData.getDataFile('{atom}{spectrum}'):
+        pn.atomicData.setDataFile(entries['coll'])
+        if logger: logger.info(f"Loaded {entries['coll']}")
+    elmnt = pn.Atom(atom, spectrum_int)
+    waves = np.array(elmnt.lineList)
+    target = float(wavelength)
+    i = np.argmin(np.abs(waves - target))
+    closest_wave = waves[i]
+    if logger: logger.info(f"Closest line to {atom}{spectrum_int}_{wavelength} is line {closest_wave}")
+    return f'{atom}{spectrum_int}_{int(closest_wave)}'
+
 def objectIntensityPyNebCode(atom: str, spectrum: str, atomic_number: int, logger=None):
     """
         A full list can be obtained as:
@@ -79,59 +100,46 @@ def objectIntensityPyNebCode(atom: str, spectrum: str, atomic_number: int, logge
         >>> objectIntensityPyNebCode('O', '3', 5007) -> 'O3_5007A'
         >>> objectIntensityPyNebCode('S', '2', 6716) -> 'S2_6716A'
     """
+    ## Spectrum as integer value
     try:
         spectrum = int(spectrum)
     except:
         spectrum = sr.roman2int(spectrum)
+
+    ## The atom 
     if atom in ['H', 'He']:
         pnatom = "{:}{:}r".format(atom, spectrum)
     else:
         pnatom = "{:}{:}".format(atom, spectrum)
-
+    
+    ## Transition Line
     try:
         wls = pn.LINE_LABEL_LIST[pnatom]
     except:
         wls = None
         if logger:
-            logger.error(
-                "Failed matching object {:}/{:} (aka {:}) to PyNeb (see LINE_LABEL_LIST)".format(atom, spectrum, pnatom))
-    if wls is None:
+            logger.warning(
+                f"Failed matching object {atom}/{spectrum} (aka {pnatom}) to PyNeb (see LINE_LABEL_LIST)")
+            logger.warning(
+                f"Will try to match a specific data file ...")
+
+    if wls is not None:
+
+        pnatomic = f'{atomic_number}A'
+        if pnatomic not in wls:
+            pnatomic = closestPyNebElement(pnatom, atomic_number)
+
+        pnstr = '_'.join([pnatom, pnatomic])
+
+        # Validate
+        try:
+            pn.LINE_LABEL_LIST[pnstr.split('_')[0]].index(pnstr.split('_')[1])
+            return pnstr
+        except:
+            if logger:
+                logger.error(
+                    f'[ERROR] Failed matching object {atom}/{spectrum}/{atomic_number} to PyNeb (see LINE_LABEL_LIST)')
         raise RuntimeError(
-            '[ERROR] Failed matching object {:}/{:}/{:} to PyNeb (see LINE_LABEL_LIST)'.format(atom, spectrum, atomic_number))
-
-    pnatomic = '{:}A'.format(atomic_number)
-    if pnatomic not in wls:
-        pnatomic = closestPyNebElement(pnatom, atomic_number)
-
-    pnstr = '_'.join([pnatom, pnatomic])
-
-# Validate
-    try:
-        pn.LINE_LABEL_LIST[pnstr.split('_')[0]].index(pnstr.split('_')[1])
-        # print('objectIntensityPyNebCode(\'{:}\', \'{:}\', {:}) -> \'{:}\''.format(atom, spectrum, atomic_number, pnstr))
-        return pnstr
-    except:
-        if logger:
-            logger.error(
-                '[ERROR] Failed matching object {:}/{:}/{:} to PyNeb (see LINE_LABEL_LIST)'.format(atom, spectrum, atomic_number))
-    raise RuntimeError(
-        '[ERROR] Failed matching object {:}/{:}/{:} to PyNeb (see LINE_LABEL_LIST)'.format(atom, spectrum, atomic_number))
-
-def satellite_str2pyneb_str_OBSOLETE(sstr: str, logger=None):
-    parts = sstr.split('_')
-    assert (len(parts) == 2)
-    atomic_number = int(parts[1])
-    g = re.fullmatch("([A-Za-z]*)([0-9])", parts[0].strip())
-    if g:
-        ans = objectIntensityPyNebCode(g[1], g[2], atomic_number, logger)
-        print('satellite_str2pyneb_str(\'{:}\') -> \'{:}\''.format(sstr, ans))
-        return objectIntensityPyNebCode(g[1], g[2], atomic_number, logger)
-    g = re.fullmatch("([A-Za-z]*)([iIvV]*)(r+)", parts[0].strip())
-    if g:
-        ans = objectIntensityPyNebCode(g[1], sr.roman2int(g[2]), atomic_number, logger)
-        print('satellite_str2pyneb_str(\'{:}\') -> \'{:}\''.format(sstr, ans))
-        return objectIntensityPyNebCode(g[1], sr.roman2int(g[2]), atomic_number, logger)
-    if logger:
-        logger.error("Failed resolving satellite string {:}".format(sstr))
-    raise RuntimeError(
-        "[ERROR] Failed resolving satellite string {:}".format(sstr))
+            f'[ERROR] Failed matching object {atom}/{spectrum}/{atomic_number} to PyNeb (see LINE_LABEL_LIST)')
+    else:
+        return unlisted(atom, spectrum, atomic_number, logger)

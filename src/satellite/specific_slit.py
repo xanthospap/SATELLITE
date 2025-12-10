@@ -175,7 +175,7 @@ def specific_slit_analysis(
         # TODO we do not need to pass the cpd list here. We can pass a more simple/small
         # list.
         si.makeIntensitiesDataFile(
-            cpd, reference_element, ["sslit_sum", "eslit_sum"], "test.dat"
+            cpd, reference_element, ["sslit_sum", "eslit_sum"], "test.dat", 100e0, logger
         )
 
         # PyNeb stuff; PyNeb will read the 'test.dat' file (for the slit).
@@ -253,6 +253,7 @@ def specific_slit_analysis(
                     global_ratios[slit_idx][ratio] = so.computeRatio(
                         ratio, global_intensities[slit_idx]["intensities"]
                     )
+                    print(f'{global_ratios[slit_idx]}')
                 except:
                     logger.info("Skipping ratio {:}".format(ratio))
 
@@ -264,6 +265,7 @@ def specific_slit_analysis(
                 logger.warning(
                     f"Encountered nan value in diagnostics; restarting computations for slit! ({times_nan_encountered}/{MAX_NAN_IN_DIAGNOSTICS_ALLOWED})"
                 )
+                print(f'{global_tene[slit_idx]}')
             times_nan_encountered += 1
 
         if nan_diagnostics or (times_nan_encountered >= MAX_NAN_IN_DIAGNOSTICS_ALLOWED):

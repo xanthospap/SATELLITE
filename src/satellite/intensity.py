@@ -9,7 +9,7 @@ import satellite.nomenclature as sn
 
 
 def makeIntensitiesDataFile(
-    fitsd: list, reference_element: dict, value_keys: list, fn: str, factor=100e0
+    fitsd: list, reference_element: dict, value_keys: list, fn: str, factor=100e0, logger=None
 ) -> str:
     """Write a relative line intensities data file to be used by PyNeb.
 
@@ -89,7 +89,7 @@ def makeIntensitiesDataFile(
         print("LINE test err", file=fout)
         for obj in fitsd:
             pnlabel = sn.objectIntensityPyNebCode(
-                obj["element"], obj["spectrum"], obj["atomic"]
+                obj["element"], obj["spectrum"], obj["atomic"], logger
             )
             print(
                 "{:} {:+9e} {:+9e}".format(
