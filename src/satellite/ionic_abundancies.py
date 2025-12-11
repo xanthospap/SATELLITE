@@ -5,6 +5,7 @@ import pyneb as pn
 
 import satellite.cfgio as sc
 import satellite.roman as sr
+import satellite.tene as tn
 import satellite.nomenclature as sn
 
 
@@ -117,7 +118,7 @@ def refTenNe2PyNebPair(ref_tene):
     )
 
 
-def computeIonicAbundancies(fitsd, tene_dict, pnObs, pnErrObs, logger):
+def computeIonicAbundancies(fitsd, tene_dict, pnObs, pnErrObs, min_percentage, logger):
     ionic_abundancies_dict = []
 
     def ref_tene_pair(tene):
@@ -130,18 +131,16 @@ def computeIonicAbundancies(fitsd, tene_dict, pnObs, pnErrObs, logger):
         reftene = ref_tene_pair(refTenNe2PyNebPair(entry["ref_tene"]))
         if reftene is None:
             logger.error(
-                f"ERROR Failed finding reference Te/Ne pair {entry["ref_tene"]} for ionic abundancies!"
+                f'ERROR Failed finding reference Te/Ne pair {entry["ref_tene"]} for ionic abundancies!'
             )
-            return
-        # pn_atom = get_atom_model_obsolete(
-        #    entry["element"], sr.roman2int(entry["spectrum"]), logger
-        # )
+            return []
+
         pn_atom = get_atom_model(entry, logger)
-        pn_element = sn.objectIntensityPyNebCode(
+        pn_element, _ = sn.objectIntensityPyNebCode(
             entry["element"], entry["spectrum"], entry["atomic"], logger
         )
         logger.debug(
-            f"computeIonicAbundancies: entry {entry["element"]}{entry["spectrum"]}{entry["atomic"]} transformed to {pn_element}"
+            f'computeIonicAbundancies: entry {entry["element"]}{entry["spectrum"]}{entry["atomic"]} transformed to {pn_element}'
         )
         sabd = pn_atom.getIonAbundance(
             int_ratio=pnObs.getIntens(0)[pn_element],
@@ -150,10 +149,21 @@ def computeIonicAbundancies(fitsd, tene_dict, pnObs, pnErrObs, logger):
             to_eval=extract_wavelength(pn_element),
             Hbeta=100.0,
         )[0]
+        if not np.isfinite(sabd):
+            logger.warning(
+                f"Central ionic abundance for {pn_element} is non-finite: {sabd!r} "
+                f"(T={reftene['sT']}, Ne={reftene['sN']}, "
+                f"int_ratio={pnObs.getIntens(0)[pn_element]}, "
+                f"to_eval={extract_wavelength(pn_element)!r})"
+            )
+            continue
+
         # Uncertainty, loop over MC simulated inttensity ratios ...
+        # note that MC lengths can be different ...
         int_mc = pnErrObs.getIntens()[pn_element]
+        n_common = min(len(int_mc), len(reftene["eT"]), len(reftene["eN"]))
         tar = []
-        for idx in range(len(int_mc)):
+        for idx in range(n_common):
             tar.append(
                 pn_atom.getIonAbundance(
                     int_ratio=int_mc[idx],
@@ -163,7 +173,15 @@ def computeIonicAbundancies(fitsd, tene_dict, pnObs, pnErrObs, logger):
                     Hbeta=100.0,
                 )
             )
-        eabd_array = np.array(tar)
+        # Remove nan values up to given percent, otherwise raise
+        eabd_array, ok = tn.inspectMcErr(tar, min_percentage, logger)
+        if not ok:
+            logger.error(
+                f"Too many nan values for MC getIonAbundance at computeIonicAbundancies for {pn_element}. Limit was {100.-min_percentage}"
+            )
+            raise RuntimeError(
+                f"Too many nan values for MC getIonAbundance at computeIonicAbundancies for {pn_element}. Limit was {100.-min_percentage}"
+            )
         assert not (np.isnan(eabd_array).any() or np.isnan(np.std(eabd_array)))
         ionic_abundancies_dict.append(
             {
@@ -172,7 +190,6 @@ def computeIonicAbundancies(fitsd, tene_dict, pnObs, pnErrObs, logger):
                 "atomic": entry["atomic"],
                 "pn_element": pn_element,
                 "abundance": sabd,
-                # "abundance_error": eabd_array.std(),
                 "abundance_error": np.std(eabd_array),
             }
         )

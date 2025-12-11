@@ -84,8 +84,6 @@ def specific_slit_analysis(
     pn_atomic_data: str,
     monte_carlo_fake_obs: int,
     max_nan_in_diagnostics_allowed_percentage: int,
-    #       args.monte_carlo_fake_obs,
-    #       args.max_allowed_mc_tries,
     pn_rv: float,
     energy_parameter: float,
     intensities_out: str,
@@ -174,14 +172,29 @@ def specific_slit_analysis(
         # compile the intensities data file (for PyNeb) and write the test.dat file.
         # TODO we do not need to pass the cpd list here. We can pass a more simple/small
         # list.
+        logger.info("Compiling intensities data file ...")
         si.makeIntensitiesDataFile(
-            cpd, reference_element, ["sslit_sum", "eslit_sum"], "test.dat", 100e0, logger
+            cpd,
+            reference_element,
+            ["sslit_sum", "eslit_sum"],
+            "test.dat",
+            100e0,
+            logger,
         )
 
+        logger.info("Setting-up PyNeb ...")
+        pn.atomicData.setDataFile("fe_ii_atom_B15_52.dat")
+        pn.atomicData.setDataFile("fe_ii_coll_B15_52.dat")
         # PyNeb stuff; PyNeb will read the 'test.dat' file (for the slit).
         sobs = pn.Observation()
+        print(
+            "dsfkjshdfkjshdkfjhskjdhfkjsdhfjkshdfkjhsdkjhfskdjhfskjdhfkjshdfkjhsdkfjhsd"
+        )
         sobs.readData(
             "test.dat", fileFormat="lines_in_rows_err_cols", errIsRelative=False
+        )
+        print(
+            "dsfkjshdfkjshdkfjhskjdhfkjsdhfjkshdfkjhsdkjhfskdjhfskjdhfkjshdfkjhsdkfjhsd"
         )
         sobs.def_EBV(label1="H1r_6563A", label2="H1r_4861A", r_theo=2.85)
         sobs.extinction.law = ext_law
@@ -193,8 +206,8 @@ def specific_slit_analysis(
         MAX_NAN_IN_DIAGNOSTICS_ALLOWED = (
             max_nan_in_diagnostics_allowed_percentage * monte_carlo_fake_obs // 10
         )
-        # MAX_NAN_IN_DIAGNOSTICS_ALLOWED cannot be zeros, or else we won;t get into the loop.
         MAX_NAN_IN_DIAGNOSTICS_ALLOWED = max(1, MAX_NAN_IN_DIAGNOSTICS_ALLOWED)
+        logger.info("Going into Monte Carlo")
         while (
             nan_diagnostics and times_nan_encountered < MAX_NAN_IN_DIAGNOSTICS_ALLOWED
         ):
@@ -220,6 +233,9 @@ def specific_slit_analysis(
 
             # Compute intensity for each FITS/atom; add to global dictionary for printing
             # later on.
+            logger.info(
+                f"Monte Carlo [{times_nan_encountered}/{MAX_NAN_IN_DIAGNOSTICS_ALLOWED}]: computing global intensities ..."
+            )
             """Example: global_intensities[1] = {'intensities': [...], 'E_BV': rc.E_BV, 'cHbeta': rc.cHbeta} """
             global_intensities[slit_idx] = {
                 "intensities": si.computeIntensities(
@@ -247,25 +263,29 @@ def specific_slit_analysis(
             }
 
             # Compute intensity ratios
+            logger.info(
+                f"Monte Carlo [{times_nan_encountered}/{MAX_NAN_IN_DIAGNOSTICS_ALLOWED}]: computing ratios ..."
+            )
             global_ratios[slit_idx] = {}
             for ratio in ratios:
                 try:
                     global_ratios[slit_idx][ratio] = so.computeRatio(
-                        ratio, global_intensities[slit_idx]["intensities"]
+                        ratio, global_intensities[slit_idx]["intensities"], logger
                     )
-                    print(f'{global_ratios[slit_idx]}')
                 except:
                     logger.info("Skipping ratio {:}".format(ratio))
 
             # Compute diagnostics (te/ne pairs)
+            logger.info(
+                f"Monte Carlo [{times_nan_encountered}/{MAX_NAN_IN_DIAGNOSTICS_ALLOWED}]: computing diagnostics ..."
+            )
             global_tene[slit_idx], nan_diagnostics = st.computeTeNePairs(
-                density_diagnostics, tempterature_diagnostics, sobs, eobs, logger
+                density_diagnostics, tempterature_diagnostics, sobs, eobs, 80.0, logger
             )
             if nan_diagnostics:
                 logger.warning(
                     f"Encountered nan value in diagnostics; restarting computations for slit! ({times_nan_encountered}/{MAX_NAN_IN_DIAGNOSTICS_ALLOWED})"
                 )
-                print(f'{global_tene[slit_idx]}')
             times_nan_encountered += 1
 
         if nan_diagnostics or (times_nan_encountered >= MAX_NAN_IN_DIAGNOSTICS_ALLOWED):
@@ -274,36 +294,28 @@ def specific_slit_analysis(
             raise RuntimeError(msg)
 
         # Compute Ionic Abundancies
-        logger.debug("> Calling computeIonicAbundancies ...")
+        logger.debug("Calling computeIonicAbundancies ...")
         global_ionic_abundancies[slit_idx] = sa.computeIonicAbundancies(
-            cpd, global_tene[slit_idx], sobs, eobs, logger
+            cpd, global_tene[slit_idx], sobs, eobs, 80.0, logger
         )
 
         # Compute abundancies per element, e.g.
-        # [...
-        # 'He2': (np.float64(0.025174496324910436), np.float64(0.00020749028502411882)),
-        # 'Ar3': (np.float64(5.035899412128091e-07), np.float64(2.0404083173261792e-08)),
-        # 'Cl3': (np.float64(2.166739769269426e-08), np.float64(9.154696103324478e-10)),
-        #  'N1': (np.float64(2.4613015709276348e-08), np.float64(9.722314034253516e-09)),
-        # ...]
-        logger.debug("> Calling computeAbundancies ...")
+        logger.debug("Calling computeAbundancies ...")
         elemspec_abundancies = sb.computeAbundancies(
             cpd, global_ionic_abundancies[slit_idx], logger
         )
 
-        logger.debug("> Calling computeIcfsWithErrors ...")
+        logger.debug("Calling computeIcfsWithErrors ...")
         global_icfs[slit_idx] = sf.computeIcfsWithErrors(elemspec_abundancies, logger)
-        logger.debug("> Calling  ionicAbundance2elementAbundance ...")
+        logger.debug("Calling  ionicAbundance2elementAbundance ...")
         global_element_abundancies[slit_idx] = sf.ionicAbundance2elementAbundance(
             elemspec_abundancies, logger
         )
-        # ----> New part <----
-        # global_icfs[slit_idx] = sf.computeManualIcfs(elemspec_abundancies, logger)
 
     ## <-- End Looping Slits --> ##
     fcrn.close()
 
-    print("All slits done ... writing files ...")
+    logger.debug("All slits done ... writing files ...")
     si.printIntensities(global_intensities, intensities_out, logger)
     so.printRatios(global_ratios, ratios_out, logger)
     st.printDiagnostics(global_tene, diagnostics_out, logger)

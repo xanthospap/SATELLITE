@@ -1,7 +1,6 @@
 import sys
 import pyneb as pn
 import numpy as np
-
 from satellite import astroflux
 import satellite.roman as sr
 import satellite.cfgio as sc
@@ -9,7 +8,12 @@ import satellite.nomenclature as sn
 
 
 def makeIntensitiesDataFile(
-    fitsd: list, reference_element: dict, value_keys: list, fn: str, factor=100e0, logger=None
+    fitsd: list,
+    reference_element: dict,
+    value_keys: list,
+    fn: str,
+    factor=100e0,
+    logger=None,
 ) -> str:
     """Write a relative line intensities data file to be used by PyNeb.
 
@@ -87,9 +91,14 @@ def makeIntensitiesDataFile(
     ref_eval = fitsd[ref_index][value_keys[1]]
     with open(fn, "w") as fout:
         print("LINE test err", file=fout)
-        for obj in fitsd:
-            pnlabel = sn.objectIntensityPyNebCode(
+        for idx, obj in enumerate(fitsd):
+            pnlabel, pnwavelength = sn.objectIntensityPyNebCode(
                 obj["element"], obj["spectrum"], obj["atomic"], logger
+            )
+            fitsd[idx]["pnwavelength"] = pnwavelength
+            fitsd[idx]["pnwavelength"], fitsd[idx]["atomic"] = (
+                fitsd[idx]["atomic"],
+                fitsd[idx]["pnwavelength"],
             )
             print(
                 "{:} {:+9e} {:+9e}".format(
@@ -164,7 +173,7 @@ def computeIntensities(
         {'element_pn': 'Cl3_5538A', 'element': 'Cl3_5538', 'intensity': 0.474866526139717, 'intensity_err': 0.028054418400823428}
     ]
     """
-    ref_pnstr = sn.objectIntensityPyNebCode(
+    ref_pnstr, _ = sn.objectIntensityPyNebCode(
         reference_element["element"],
         reference_element["spectrum"],
         reference_element["atomic"],
@@ -180,7 +189,7 @@ def computeIntensities(
             np.std(pnErrObs.extinction.E_BV),
             reference_element["atomic"],
         )
-        pnstr = sn.objectIntensityPyNebCode(
+        pnstr, _ = sn.objectIntensityPyNebCode(
             fits["element"], fits["spectrum"], fits["atomic"], logger
         )
         iele = float(pnObs.getIntens()[pnstr])

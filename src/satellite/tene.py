@@ -1,6 +1,90 @@
 import pyneb as pn
 import numpy as np
 
+MIN_VALID_PERCENTAGE = 70.0  # e.g. require at least 70% non-NaN values
+
+
+def inspectMcErr(err_array, min_percentage=MIN_VALID_PERCENTAGE, logger=None):
+    """
+    Convert an array of MC error realisations into a single scalar error.
+
+    - If the fraction of non-NaN values is below `min_percentage`,
+      we treat the diagnostic as failed and return (None, False).
+    - Otherwise we compute the std dev over the non-NaN values and
+      return (sigma, True).
+    """
+    arr = np.asarray(err_array, dtype=float)
+
+    if arr.size == 0:
+        logger.warning("inspectMcErr: empty error array; failing diagnostic")
+        return None, False
+
+    nan_mask = np.isnan(arr)
+    n_total = arr.size
+    n_nan = nan_mask.sum()
+    n_valid = n_total - n_nan
+
+    valid_percent = 100.0 * n_valid / n_total
+    nan_percent = 100.0 - valid_percent
+
+    if n_nan > 0:
+        logger.debug(
+            f"inspectMcErr: {n_nan}/{n_total} NaN values "
+            f"({nan_percent:.1f}% NaN, {valid_percent:.1f}% valid)"
+        )
+
+    # Too many NaNs → fail
+    if valid_percent < min_percentage:
+        logger.warning(
+            "inspectMcErr: too many NaN MC realisations "
+            f"({nan_percent:.1f}% > allowed {100.0 - min_percentage:.1f}%). "
+            "Marking diagnostic as failed."
+        )
+        return None, False
+
+    # Enough valid values → pass
+    # valid_vals = arr[~nan_mask]
+    # sigma = float(np.std(valid_vals, ddof=1))  # ddof=1 → sample std dev
+
+    return arr[~nan_mask], True
+
+
+def computeTeNePairs(
+    density_diagnostics: list,
+    tempterature_diagnostics: list,
+    pnObs,
+    pnErrObs,
+    min_percentage,
+    logger,
+):
+    def filterPairs(densityd, temperatured, pobs):
+        user = [(td, dd) for td in temperatured for dd in densityd]
+        diags = pn.Diagnostics()
+        # construct all possible diagnostics from the given observation set
+        diags.addDiagsFromObs(pobs)
+        validLines = diags.getDiagLabels()
+        # filter user list based on observation set
+        return [(d[0], d[1]) for d in user if d[0] in validLines and d[1] in validLines]
+
+    tene_slit_dict = []
+    diags = pn.Diagnostics()
+    for pair in filterPairs(density_diagnostics, tempterature_diagnostics, pnObs):
+        st, sn = diags.getCrossTemDen(pair[0], pair[1], obs=pnObs)
+        et, en = diags.getCrossTemDen(pair[0], pair[1], obs=pnErrObs)
+        et, okT = inspectMcErr(et, min_percentage, logger)
+        en, okN = inspectMcErr(en, min_percentage, logger)
+        tene_slit_dict.append(
+            {
+                "tene_pair": (pair[0], pair[1]),
+                "sT": st,
+                "sN": sn,
+                "eT": et,
+                "eN": en,
+            }
+        )
+
+    return tene_slit_dict, not (okT and okN)
+
 
 def err2scalar(err_array, logger):
     """
@@ -17,16 +101,13 @@ def err2scalar(err_array, logger):
     return np.std(err_array[~np.isnan(err_array)])
 
 
-MAX_NAN_OCCURANCES = 9
-
-
-def computeTeNePairs(
+def computeTeNePairs_obsolete(
     density_diagnostics: list, tempterature_diagnostics: list, pnObs, pnErrObs, logger
 ):
     def filterPairs(densityd, temperatured, pobs):
         user = [(td, dd) for td in temperatured for dd in densityd]
         diags = pn.Diagnostics()
-        # construct all possible diagnostics from the give observation set
+        # construct all possible diagnostics from the given observation set
         diags.addDiagsFromObs(pobs)
         validLines = diags.getDiagLabels()
         # filter user list based on observation set

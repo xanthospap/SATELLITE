@@ -194,13 +194,16 @@ if __name__ == "__main__":
     config = cfgio.parseConfigInout(args.config)
 
     # check input FITS files
-    fits_info, missing_files = cfgio.checkInputFits(cfgio.configFitsFileList(config))
+    fits_info, missing_files = cfgio.checkInputFits(
+        cfgio.configFitsFileList(config), logger
+    )
     if missing_files != []:
         err = "\n".join(missing_files)
         logger.warning("Missing FITS files: {:}".format(err))
         if args.missing_fits_is_error:
             sys.exit(1)
 
+        # try:
     if cfgio.doSpecificSlitAnalysis(config):
         # Specific Slit Analysis
         specific_slit.specific_slit_analysis(
@@ -269,6 +272,10 @@ if __name__ == "__main__":
             "radial_slit_corners.dat",
             logger,
         )
+    # except Exception as e:
+    #    logger.error(f"Analysis failed! Error was: {e}")
+    #    print(f"Analysis failed! Error was: {e}")
+    #    sys.exit(9)
 
     # if needed draw the plots ...
     if not args.no_plots:

@@ -114,6 +114,7 @@ elemspec2ionstr_dict = {
     "CaII": "Ca+",
     "FeII": "Fe+",
     "FeIII": "Fe2+",
+    "SiII": "Si+",
 }
 
 
@@ -405,10 +406,6 @@ def computeIcfsWithErrors(abundancies, logger=None):
     renamed_abunds = renameIons({k: v[0] for k, v in abundancies.items()})
     renamed_errors = renameIons({k: v[1] for k, v in abundancies.items()})
 
-    koko = {k: v[0] for k, v in abundancies.items()}
-    print(f"{koko}")
-    print(f"{renamed_abunds}")
-
     results = {}
 
     # get omega and u
@@ -556,7 +553,6 @@ def printIcfs(icfs, elem_abundancies, fn, logger):
         print("", file=fout)
 
         # print omega and u values
-        print(icfs)
         print(f"Omega ", end="", file=fout)
         for j, c in enumerate(max_col_widths):
             print(f"{icfs[c[0]]['omega']:30.9e}", end="", file=fout)
@@ -566,7 +562,6 @@ def printIcfs(icfs, elem_abundancies, fn, logger):
             print(f"{icfs[c[0]]['U']:30.9e}", end="", file=fout)
         print("", file=fout)
 
-        # print(lines)
         for j, line in enumerate(lines):
             print(f"{line[0]:<5s} ", file=fout, end="")
             for lc in zip(line[1:], max_col_widths):

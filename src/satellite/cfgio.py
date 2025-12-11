@@ -2,6 +2,7 @@ import yaml
 import os
 import re
 import sys
+import pathlib
 
 import pyneb as pn
 from satellite import roman
@@ -173,7 +174,89 @@ def configAngularSlitAnalysis(dct: dict):
     return slits
 
 
+def findFitsFilename(fits_dct, suffix, data_dir, logger=None):
+    if suffix.startswith("."):
+        suffix = suffix[1:]
+    element_re = re.escape(fits_dct["element"])
+    wavel_re = re.escape(str(fits_dct["atomic"]))
+    fnames = [None, None]
+    # data or error Fits ...
+    for j, ftype in enumerate(["fns", "fne"]):
+        last_re = re.escape(("s." if ftype == "fns" else "e.") + suffix)
+        spec_re = re.escape(fits_dct["spectrum"])
+        # Case 1:
+        # <ELEMENT><SPECTRUM_ROMAN>*<ATOMIC>*[e|s].<SUFFIX>
+        pattern = re.compile(
+            rf"(?P<element>{element_re})(?P<sroman>{spec_re})(?P<partA>.*)(?P<wavel>{wavel_re})(?P<partB>.*)(?P<last>{last_re})",
+            re.IGNORECASE,
+        )
+        matches = []
+        for path in pathlib.Path(data_dir).iterdir():
+            if not path.is_file():
+                continue
+            # match against the file name only
+            m = pattern.fullmatch(path.name)
+            if m:
+                matches.append(path)
+        if len(matches) > 1:
+            logger.error(
+                f"More than one filenames in {data_dir} matching entry {fits_dct["element"]}{fits_dct["spectrum"]}_{fits_dct["atomic"]}"
+            )
+            return fnames
+        if len(matches) == 1:
+            fnames[j] = str(matches[0])
+            continue
+        # Case 2:
+        # <ELEMENT><SPECTRUM_INT>*<ATOMIC>*[e|s].<SUFFIX>
+        spec_re = re.escape(str(roman.roman2int(fits_dct["spectrum"])))
+        pattern = re.compile(
+            rf"(?P<element>{element_re})(?P<sroman>{spec_re})(?P<partA>.*)(?P<wavel>{wavel_re})(?P<partB>.*)(?P<last>{last_re})",
+            re.IGNORECASE,
+        )
+        matches = []
+        for path in pathlib.Path(data_dir).iterdir():
+            if not path.is_file():
+                continue
+            # match against the file name only
+            m = pattern.fullmatch(path.name)
+            if m:
+                matches.append(path)
+        if len(matches) > 1:
+            logger.error(
+                f"More than one filenames in {data_dir} matching entry {fits_dct["element"]}{fits_dct["spectrum"]}_{fits_dct["atomic"]}"
+            )
+            return fnames
+        if len(matches) == 1:
+            fnames[j] = str(matches[0])
+    return fnames
+
+
 def checkInputFits(fitsd: list, logger=None):
+    fitsd_out = []
+    missing_files = []
+    for idx, fits in enumerate(fitsd):
+        fitspath, basename = os.path.split(fits["fne"])
+        fns, fne = findFitsFilename(
+            fits, pathlib.Path(basename).suffix, fitspath, logger=None
+        )
+        if fns is None or fne is None:
+            if logger:
+                logger.error(
+                    f"Failed finding a matching fits filename for {fits["element"]}{fits["spectrum"]}_{fits["atomic"]}"
+                )
+            missing_files.append(basename)
+        else:
+            fitsd_out.append(fits)
+            fitsd_out[-1]["fns"] = fns
+            fitsd_out[-1]["fne"] = fne
+            if logger:
+                logger.info(
+                    f"Entries for {fits["element"]}{fits["spectrum"]}_{fits["atomic"]} are {fns} and {fne}"
+                )
+    return fitsd_out, missing_files
+
+
+def checkInputFits_obsolete(fitsd: list, logger=None):
     fitsd_out = []
     missing_files = []
     for idx, fits in enumerate(fitsd):
@@ -186,37 +269,69 @@ def checkInputFits(fitsd: list, logger=None):
                     logger.warning("Missing Fits file {:}".format(fitsfn))
                 bn = os.path.basename(fitsfn)
                 file_is_missing = True
-                # find spectrum in filename
+
+                ##  case 1: check if the filename exists as:
+                ##  <ATOM><SPECTRUM_INT>* [!!ignores case!!]
                 sstr = fits["spectrum"]
-                # replace roman spectrum with int and see if file exists
-                if bn.find(sstr) >= 0:
-                    gfn = bn.replace(sstr, str(roman.roman2int(sstr)), 1)
-                    guess = os.path.join(os.path.dirname(fitsfn), gfn)
+                if bn.find(fits["spectrum"]) >= 0:
+                    element_re = re.escape(fits["element"])
+                    spec_re = re.escape(fits["spectrum"])
+                    pattern = re.compile(
+                        rf"(?P<element>{element_re})(?P<sroman>{spec_re})(?P<tail>.*)",
+                        re.IGNORECASE,
+                    )
+                    m = pattern.fullmatch(bn)
+                    guess = (
+                        m.group("element")
+                        + str(roman.roman2int(sstr))
+                        + m.group("tail")
+                    )
+                    guess = os.path.join(os.path.dirname(fitsfn), guess)
+
                     if os.path.isfile(guess):
                         # change the name in the return list
-                        if logger:
-                            logger.debug(
-                                "Fits filename {:} is missing; using {:}".format(
-                                    os.path.basename(fitsfn), gfn
-                                )
-                            )
                         fitsd[idx][ftype] = guess
                         file_is_missing = False
-                if file_is_missing and bn.find(sstr) >= 0:
-                    gfn = bn.replace(sstr, sstr.upper(), 1)
-                    guess = os.path.join(os.path.dirname(fitsfn), gfn)
+
+                ##  case 2: check if the filename exists as:
+                ##  <ATOM><SPECTRUM_ROMAN_UPPER_CASE>*
+                if bn.find(fits["spectrum"].upper()) >= 0:
+                    element_re = re.escape(fits["element"])
+                    spec_re = re.escape(fits["spectrum"])
+                    pattern = re.compile(
+                        rf"(?P<element>{element_re})(?P<sroman>{spec_re})(?P<tail>.*)",
+                        re.IGNORECASE,
+                    )
+                    m = pattern.fullmatch(bn)
+                    guess = (
+                        m.group("element") + fits["spectrum"].upper() + m.group("tail")
+                    )
+                    guess = os.path.join(os.path.dirname(fitsfn), guess)
+
                     if os.path.isfile(guess):
-                        if logger:
-                            logger.debug(
-                                "Fits filename {:} is missing; using {:}".format(
-                                    os.path.basename(fitsfn), gfn
-                                )
-                            )
+                        # change the name in the return list
                         fitsd[idx][ftype] = guess
                         file_is_missing = False
+
+                # if file_is_missing and bn.find(sstr) >= 0:
+                #    gfn = bn.replace(sstr, sstr.upper(), 1)
+                #    guess = os.path.join(os.path.dirname(fitsfn), gfn)
+                #    if os.path.isfile(guess):
+                #        if logger:
+                #            logger.debug(
+                #                "Fits filename {:} is missing; using {:}".format(
+                #                    os.path.basename(fitsfn), gfn
+                #                )
+                #            )
+                #        fitsd[idx][ftype] = guess
+                #        file_is_missing = False
             if file_is_missing:
                 missing_files.append(fitsfn)
                 obs_or_error_missing = True
+                if logger:
+                    logger.warning(
+                        f"Cannot find a fits file that matches {fits['atom']}{fits['spectrum']}_{fits['atomic']}"
+                    )
         if not obs_or_error_missing:
             fitsd_out.append(fits)
     return fitsd_out, missing_files
