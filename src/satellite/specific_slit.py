@@ -187,14 +187,8 @@ def specific_slit_analysis(
         pn.atomicData.setDataFile("fe_ii_coll_B15_52.dat")
         # PyNeb stuff; PyNeb will read the 'test.dat' file (for the slit).
         sobs = pn.Observation()
-        print(
-            "dsfkjshdfkjshdkfjhskjdhfkjsdhfjkshdfkjhsdkjhfskdjhfskjdhfkjshdfkjhsdkfjhsd"
-        )
         sobs.readData(
             "test.dat", fileFormat="lines_in_rows_err_cols", errIsRelative=False
-        )
-        print(
-            "dsfkjshdfkjshdkfjhskjdhfkjsdhfjkshdfkjhsdkjhfskdjhfskjdhfkjshdfkjhsdkfjhsd"
         )
         sobs.def_EBV(label1="H1r_6563A", label2="H1r_4861A", r_theo=2.85)
         sobs.extinction.law = ext_law

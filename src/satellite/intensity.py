@@ -101,6 +101,9 @@ def makeIntensitiesDataFile(
                 fitsd[idx]["pnwavelength"],
             )
             print(
+                f"Writing to test.dat fits {pnlabel} -> {fitsd[idx]["element"]}, {fitsd[idx]["spectrum"]}, {fitsd[idx]["atomic"]}, {fitsd[idx]["pnwavelength"]}"
+            )
+            print(
                 "{:} {:+9e} {:+9e}".format(
                     pnlabel,
                     factor * obj[value_keys[0]] / ref_sval,
@@ -192,6 +195,7 @@ def computeIntensities(
         pnstr, _ = sn.objectIntensityPyNebCode(
             fits["element"], fits["spectrum"], fits["atomic"], logger
         )
+        print(f"{fits["element"]}{fits["spectrum"]}_{fits["atomic"]} -> {pnstr}")
         iele = float(pnObs.getIntens()[pnstr])
         eele = float(pnObs.getError()[pnstr])
         err = np.sqrt(eele**2 + eref**2 + float(ecor / scor) ** 2)
