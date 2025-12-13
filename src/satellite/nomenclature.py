@@ -1,111 +1,21 @@
 from __future__ import annotations
-import satellite.roman as sr
-import pyneb as pn
-import numpy as np
+
 import re
 from typing import Optional, Tuple, Union
 
+import numpy as np
+import pyneb as pn
 
-def closestPyNebElement(element: str, atomic_number: int, logger=None) -> str:
-    min_diff = 1000000
-    pn_wl = None
-    atomic_number = float(atomic_number)
-    for wl in pn.LINE_LABEL_LIST[element]:
-        if re.fullmatch("[0-9]*A", wl):
-            diff = abs(float(wl[0:-1]) - atomic_number)
-            if diff < min_diff:
-                pn_wl = wl
-                min_diff = diff
-    if logger:
-        logger.warning(
-            "PyNeb is missing wavelength {:} for element {:}; using {:} instead".format(
-                atomic_number, element, pn_wl
-            )
-        )
+import satellite.roman as sr
 
-    return pn_wl, round(pn_wl[:-1]) if pn_wl.endswith("A") else round(pn_wl)
-
-
-def unlisted(atom, spectrum_int, wavelength, logger=None):
-    entries = pn.atomicData.getDataFile()[f"{atom}{spectrum_int}"]
-    if pn.atomicData.getDataFile(f"{atom}{spectrum_int}", "atom") is None:
-        if "atom" in entries:
-            pn.atomicData.setDataFile(entries["atom"])
-            if logger:
-                logger.info(f"Loaded {entries['atom']}")
-    if pn.atomicData.getDataFile(f"{atom}{spectrum_int}", "coll") is None:
-        if "coll" in entries:
-            pn.atomicData.setDataFile(entries["coll"])
-            if logger:
-                logger.info(f"Loaded {entries['coll']}")
-    if pn.atomicData.getDataFile(f"{atom}{spectrum_int}", "rec") is None:
-        if "rec" in entries:
-            pn.atomicData.setDataFile(entries["rec"])
-            if logger:
-                logger.info(f"Loaded {entries['rec']}")
-    elmnt = pn.Atom(atom, spectrum_int)
-    waves = np.array(elmnt.lineList)
-    target = float(wavelength)
-    i = np.argmin(np.abs(waves - target))
-    closest_wave = waves[i]
-    if logger:
-        logger.info(
-            f"Closest line to {atom}{spectrum_int}_{wavelength} is line {closest_wave}"
-        )
-    return f"{atom}{spectrum_int}_{round(closest_wave)}A", round(closest_wave)
-
-
-def objectIntensityPyNebCode(atom: str, spectrum: str, atomic_number: int, logger=None):
-    """ """
-    ## Spectrum as integer value
-    try:
-        spectrum = int(spectrum)
-    except:
-        spectrum = sr.roman2int(spectrum)
-
-    ## The atom
-    if atom in ["H", "He"]:
-        pnatom = "{:}{:}r".format(atom, spectrum)
-    else:
-        pnatom = "{:}{:}".format(atom, spectrum)
-
-    ## Transition Lines (if any)
-    try:
-        wls = pn.LINE_LABEL_LIST[pnatom]
-        pnatomic = f"{atomic_number}A"
-        if pnatomic not in wls:
-            pnatomic, pnline = closestPyNebElement(pnatom, atomic_number)
-        else:
-            pnline = round(atomic_number)
-        pnstr = "_".join([pnatom, pnatomic])
-    except:
-        wls = None
-        if logger:
-            logger.warning(
-                f"Failed matching object {atom}/{spectrum} (aka {pnatom}) to PyNeb (see LINE_LABEL_LIST)"
-            )
-            logger.warning(f"Will try to match a specific data file ...")
-
-    if wls is not None:
-        return pnstr, pnline
-    else:
-        return unlisted(atom, spectrum, atomic_number, logger)
-
-
-# Generic Wavelength for easy manipulation (parsing, etc)
 WaveLike = Union[int, float, str]
 
 
-def _wave_to_angstrom(w: WaveLike) -> float:
-    """Parse wavelength to Angstrom.
-    Accepts: 5007, 5007.0, '5007', '5007A', '10.5m', '500.7nm', 'Å' (treated as A).
-    Returns the Wavelength as a floating point number
-    """
+def wave_to_angstrom(w: WaveLike) -> float:
     if isinstance(w, (int, float)):
         return float(w)
-
     s = str(w).strip().replace("Å", "A")
-    m = re.fullmatch(r"(\d+(?:\.\d+)?)(?:\s*)(A|m|nm)", s)
+    m = re.fullmatch(r"(\d+(?:\.\d+)?)(?:\s*)(A|nm|m)", s)
     if m:
         val = float(m.group(1))
         unit = m.group(2)
@@ -113,93 +23,99 @@ def _wave_to_angstrom(w: WaveLike) -> float:
             return val
         if unit == "nm":
             return val * 10.0
-        if unit == "m":  # microns in PyNeb labels
+        if unit == "m":  # microns
             return val * 1e4
-
-    # Fallback: extract first float-looking token, assume Angstrom
+    # fallback: first number, assume Å
     m2 = re.search(r"(\d+(?:\.\d+)?)", s)
     if not m2:
         raise ValueError(f"Could not parse wavelength from {w!r}")
     return float(m2.group(1))
 
 
-def _parse_line_label_to_angstrom(wl_label: str) -> Optional[float]:
-    """Parse a PyNeb line fragment like '5007A', '88.3m', '7319A+' into Angstrom."""
-    s = wl_label.strip().replace("Å", "A")
-
-    # Find number + unit somewhere inside (tolerate suffixes like '+' or '.')
+def _label_to_angstrom(lbl: str) -> Optional[float]:
+    s = lbl.strip().replace("Å", "A")
     m = re.search(r"(\d+(?:\.\d+)?)(A|m)", s)
-    if m:
-        val = float(m.group(1))
-        unit = m.group(2)
-        return val * (1e4 if unit == "m" else 1.0)
-
-    # If no explicit unit but has a number, assume Angstrom
-    m2 = re.search(r"(\d+(?:\.\d+)?)", s)
-    if m2:
-        return float(m2.group(1))
-
-    return None
+    if not m:
+        return None
+    val = float(m.group(1))
+    return val * (1e4 if m.group(2) == "m" else 1.0)
 
 
-def _pick_closest_label(
-    wl_labels: list[str],
-    target_ang: float,
-) -> Tuple[str, float]:
-    """Return (best_wl_label_fragment, best_wavelength_angstrom)."""
-    best_label = None
-    best_ang = None
-    best_diff = float("inf")
-
-    for lab in wl_labels:
-        ang = _parse_line_label_to_angstrom(lab)
+def _closest_from_labels(ion_label: str, target_ang: float) -> Tuple[str, float]:
+    labels = pn.LINE_LABEL_LIST[ion_label]
+    best_lbl, best_ang, best_diff = None, None, float("inf")
+    for lab in labels:
+        ang = _label_to_angstrom(lab)
         if ang is None:
             continue
         diff = abs(ang - target_ang)
         if diff < best_diff:
-            best_diff = diff
-            best_label = lab  # wavelenth string
-            best_ang = ang  # wavelength float
+            best_lbl, best_ang, best_diff = lab, ang, diff
+    if best_lbl is None or best_ang is None:
+        raise ValueError(f"No parseable labels in LINE_LABEL_LIST[{ion_label}]")
+    return best_lbl, best_ang
 
-    if best_label is None or best_ang is None:
-        raise ValueError("No parseable wavelengths found in candidate label list")
 
-    return best_label, best_ang
+def _format_ang_label(wang: float) -> str:
+    # mimic the “one decimal when needed” feel you see in printTransition()
+    if abs(wang - round(wang)) < 1e-6:
+        return f"{int(round(wang))}A"
+    s = f"{wang:.1f}".rstrip("0").rstrip(".")
+    return f"{s}A"
+
+
+# ---------- atomic data loading helper (strips '* ') ----------
+
+_STATUS_PREFIX_RE = re.compile(r"^[*XDD]\s*", flags=re.IGNORECASE)
 
 
 def _try_load_any_data_files(ion: str, logger=None) -> bool:
-    """Try to make PyNeb aware of some data files for `ion` by scanning available files."""
     try:
-        files = pn.atomicData.getAllAvailableFiles(ion)
+        raw = pn.atomicData.getAllAvailableFiles(ion) or []
     except Exception:
         return False
 
-    if not files:
-        return False
+    def clean(entry: str) -> tuple[bool, str]:
+        s = entry.strip()
+        is_default = s.startswith("*")
+        s = _STATUS_PREFIX_RE.sub("", s).strip()
+        return is_default, s
 
-    # Pick the first matching file per type (atom/coll/rec)
-    def pick(pattern: str) -> Optional[str]:
-        for f in files:
-            if re.search(pattern, f, flags=re.IGNORECASE):
-                return f
+    def kind(fname: str) -> Optional[str]:
+        f = fname.lower()
+        if "_atom_" in f:
+            return "atom"
+        if "_coll_" in f:
+            return "coll"
+        if "_rec_" in f or f.endswith(".func"):
+            return "rec"
         return None
 
-    atom_f = pick(r"_atom_|\batom\b")  # atomic
-    coll_f = pick(r"_coll_|\bcoll\b")  # collision
-    rec_f = pick(r"_rec_|\brec\b")  # recombination
+    buckets = {"atom": [], "coll": [], "rec": []}
+    for e in raw:
+        is_def, fn = clean(e)
+        k = kind(fn)
+        if k and fn:
+            buckets[k].append((is_def, fn))
 
-    loaded_any = False
-    for f in (atom_f, coll_f, rec_f):
-        if f:
-            try:
-                pn.atomicData.setDataFile(f)
-                loaded_any = True
-                if logger:
-                    logger.info(f"Loaded atomic data file: {f}")
-            except Exception:
-                pass
+    loaded = False
+    for k in ("atom", "coll", "rec"):
+        if not buckets[k]:
+            continue
+        # prefer starred/default file
+        fn = sorted(buckets[k], key=lambda t: (not t[0], t[1]))[0][1]
+        try:
+            pn.atomicData.setDataFile(fn)
+            loaded = True
+            if logger:
+                logger.info(f"Loaded {k} data for {ion}: {fn}")
+        except Exception as ex:
+            if logger:
+                logger.warning(f"Failed loading {k} for {ion} from {fn}: {ex}")
+    return loaded
 
-    return loaded_any
+
+# ---------- main function ----------
 
 
 def best_pyneb_line(
@@ -208,83 +124,66 @@ def best_pyneb_line(
     wavelength: WaveLike,
     *,
     logger=None,
-    use_recomb_suffix_for_hhe: bool = True,
 ) -> Tuple[str, float]:
     """
-    Given (element, spectrum, wavelength), return:
-      (full_pyneb_line_label, chosen_wavelength_in_angstrom)
+    Returns (label, closest_wavelength_A).
 
-    Examples:
-      best_pyneb_line("O", "III", 5006.8) -> ("O3_5007A", 5007.0)
-      best_pyneb_line("H", 1, 4861)       -> ("H1r_4861A", 4861.0)
-      best_pyneb_line("S", 4, "10.5m")    -> ("S4_10.5m", 105000.0)
+    Key behavior change vs your current version:
+    - For non-(H,He), we *prefer* the Atom transition table (like printTransition),
+      and only fall back to LINE_LABEL_LIST if Atom can't be constructed.
     """
-    # Normalize spectrum, aka make it an integer
-    spec_int = (
-        int(spectrum)
-        if isinstance(spectrum, (int, np.integer))
-        else (
-            int(spectrum)
-            if str(spectrum).strip().isdigit()
-            else sr.roman2int(str(spectrum))
-        )
-    )
-
-    # Get the wavelength as a floating point number (the user-declared one)
-    target_ang = _wave_to_angstrom(wavelength)
-
-    # Ion label for LINE_LABEL_LIST (H/He recombination labels are usually *r)
-    if use_recomb_suffix_for_hhe and element in {"H", "He"}:
-        ion_label = f"{element}{spec_int}r"
+    # spectrum -> int
+    if isinstance(spectrum, (int, np.integer)):
+        spec = int(spectrum)
     else:
-        ion_label = f"{element}{spec_int}"
+        s = str(spectrum).strip()
+        spec = int(s) if s.isdigit() else sr.roman2int(s)
 
-    # Ion key for atomicData file lookup typically does NOT use the 'r' suffix
-    ion_data_key = f"{element}{spec_int}"
+    target_ang = wave_to_angstrom(wavelength)
 
-    # 1) Try LINE_LABEL_LIST first
-    if ion_label in pn.LINE_LABEL_LIST:
-        wl_labels = list(pn.LINE_LABEL_LIST[ion_label])
-        best_frag, best_ang = _pick_closest_label(wl_labels, target_ang)
-        full = f"{ion_label}_{best_frag}"
+    ion_key = f"{element}{spec}"  # for pn.Atom / data files
+    ion_label = (
+        f"{element}{spec}r" if element in {"H", "He"} else ion_key
+    )  # for LINE_LABEL_LIST
 
-        # warn if not exact fragment match
-        # (exactness is fuzzy; treat within 1e-3 A as exact)
-        if abs(best_ang - target_ang) > 1e-3 and logger:
-            logger.warning(
-                f"PyNeb has no exact {ion_label}_{wavelength}; using closest {full}"
-            )
-        return full, best_ang
+    # H/He: use LINE_LABEL_LIST (recombination labels)
+    if element in {"H", "He"} and ion_label in pn.LINE_LABEL_LIST:
+        frag, best_ang = _closest_from_labels(ion_label, target_ang)
+        return f"{ion_label}_{frag}", best_ang
 
-    if logger:
-        logger.warning(
-            f"{ion_label} not found in pn.LINE_LABEL_LIST; trying atomic data files..."
-        )
-
-    # 2) Try to load any data files for the ion
-    _try_load_any_data_files(ion_data_key, logger=logger)
-
-    # 3) Instantiate Atom and use its computed transitions (collisionally excited lines)
+    # Other ions: try Atom first (this matches printTransition behavior)
+    atom_obj = None
     try:
-        atom_obj = pn.Atom(element, spec_int)
+        atom_obj = pn.Atom(element, spec)
+    except Exception:
+        _try_load_any_data_files(ion_key, logger=logger)
+        atom_obj = pn.Atom(element, spec)
+
+    # Prefer getTransition if available; otherwise use lineList directly
+    closest_ang = None
+    if hasattr(atom_obj, "getTransition"):
+        try:
+            tr = atom_obj.getTransition(target_ang)  # some versions accept positional
+        except TypeError:
+            tr = atom_obj.getTransition(wave=target_ang)
+
+        # robust extraction: if getTransition returns a dict/tuple, find the float wavelength inside
+        if isinstance(tr, dict):
+            for k in ("wave", "wavelength", "lambda"):
+                if k in tr:
+                    closest_ang = float(tr[k])
+                    break
+        elif isinstance(tr, (tuple, list)):
+            # find first float-like item
+            for x in tr:
+                if isinstance(x, (int, float, np.floating)):
+                    closest_ang = float(x)
+                    break
+
+    if closest_ang is None:
         waves = np.asarray(atom_obj.lineList, dtype=float)
-        if waves.size == 0:
-            raise ValueError("Atom.lineList is empty")
         i = int(np.argmin(np.abs(waves - target_ang)))
-        best_ang = float(waves[i])
+        closest_ang = float(waves[i])
 
-        # Build a PyNeb-looking label fragment (Angstrom by default)
-        best_frag = f"{int(round(best_ang))}A"
-        full = f"{ion_data_key}_{best_frag}"
-
-        if logger:
-            logger.info(
-                f"Closest Atom() line to {ion_data_key}_{wavelength} is {full} (≈{best_ang:.4f} A)"
-            )
-        return full, best_ang
-
-    except Exception as e:
-        raise ValueError(
-            f"Could not match {element}{spec_int} at {wavelength!r}: "
-            f"not in LINE_LABEL_LIST and Atom() fallback failed."
-        ) from e
+    frag = _format_ang_label(closest_ang)
+    return f"{ion_key}_{frag}", closest_ang
