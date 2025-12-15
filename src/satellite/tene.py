@@ -1,5 +1,7 @@
 import pyneb as pn
 import numpy as np
+import copy
+from satellite import satdebug as db
 
 MIN_VALID_PERCENTAGE = 70.0  # e.g. require at least 70% non-NaN values
 
@@ -49,6 +51,11 @@ def inspectMcErr(err_array, min_percentage=MIN_VALID_PERCENTAGE, logger=None):
     return arr[~nan_mask], True
 
 
+# def translateDiagnostics(fitsd, user_list):
+#    pn_list = copy.deepcopy(user_list)
+#    for j, ion in enumerate(user_list):
+
+
 def computeTeNePairs(
     density_diagnostics: list,
     tempterature_diagnostics: list,
@@ -57,6 +64,8 @@ def computeTeNePairs(
     min_percentage,
     logger,
 ):
+    print(density_diagnostics)
+
     def filterPairs(densityd, temperatured, pobs):
         user = [(td, dd) for td in temperatured for dd in densityd]
         diags = pn.Diagnostics()
@@ -65,6 +74,10 @@ def computeTeNePairs(
         validLines = diags.getDiagLabels()
         # filter user list based on observation set
         return [(d[0], d[1]) for d in user if d[0] in validLines and d[1] in validLines]
+
+    if len(filterPairs(density_diagnostics, tempterature_diagnostics, pnObs)) == 0:
+        print("----------------------------------->>>>")
+    db.debug_obs_labels(pnObs)
 
     tene_slit_dict = []
     diags = pn.Diagnostics()

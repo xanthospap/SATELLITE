@@ -17,6 +17,7 @@ import satellite.ionic_abundancies as sa
 import satellite.abundance as sb
 import satellite.icf as sf
 import satellite.ratios as so
+import satellite.nomenclature as sn
 
 
 def getFitsSlit(fits_fn: str, slit: dict, logger=None):
@@ -72,6 +73,17 @@ def findEntry(element, spectrum, atomic, _list):
     raise RuntimeError(
         f"ERROR Failed finding entry {element}{spectrum}_{atomic} in list!"
     )
+
+
+def getIonTransmittionLines(fitsd: list):
+    cpd = copy.deepcopy(fitsd)
+    for j, ion in enumerate(fitsd):
+        pyneb_str, wavelength = sn.best_pyneb_line(
+            ion["element"], ion["spectrum"], ion["atomic"]
+        )
+        cpd[j]["pnstr"] = pyneb_str
+        cpd[j]["pn_line"] = wavelength
+    return cpd
 
 
 def specific_slit_analysis(
@@ -141,6 +153,9 @@ def specific_slit_analysis(
     global_element_abundancies = {}
     global_icfs = {}
 
+    # clear-up transmittion lines using PyNeb
+    fitsd = getIonTransmittionLines(fitsd)
+
     # A file to write out corners
     fcrn = open(corners_out, "w")
 
@@ -183,8 +198,6 @@ def specific_slit_analysis(
         )
 
         logger.info("Setting-up PyNeb ...")
-        pn.atomicData.setDataFile("fe_ii_atom_B15_52.dat")
-        pn.atomicData.setDataFile("fe_ii_coll_B15_52.dat")
         # PyNeb stuff; PyNeb will read the 'test.dat' file (for the slit).
         sobs = pn.Observation()
         sobs.readData(
