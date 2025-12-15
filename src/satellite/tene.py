@@ -2,6 +2,12 @@ import pyneb as pn
 import numpy as np
 import copy
 from satellite import satdebug as db
+from satellite import roman
+import re
+from dataclasses import dataclass
+from typing import List, Tuple, Dict
+import math
+from typing import Optional
 
 MIN_VALID_PERCENTAGE = 70.0  # e.g. require at least 70% non-NaN values
 
@@ -51,12 +57,171 @@ def inspectMcErr(err_array, min_percentage=MIN_VALID_PERCENTAGE, logger=None):
     return arr[~nan_mask], True
 
 
-# def translateDiagnostics(fitsd, user_list):
-#    pn_list = copy.deepcopy(user_list)
-#    for j, ion in enumerate(user_list):
+_DIAG_RE = re.compile(
+    r"""^
+        \[
+          (?P<elem>[A-Z][a-z]*)          # element symbol: N, Ni, Fe, ...
+          (?P<spec>[IVXLCDM]+)           # roman spectrum: I, II, III, ...
+        \]
+        \s*
+        (?P<num>\d+(?:\.\d+)?)           # numerator wavelength
+        \s*/\s*
+        (?P<den>\d+(?:\.\d+)?)           # denominator wavelength
+        (?P<plus>\+)?                    # optional '+'
+        $
+    """,
+    re.VERBOSE,
+)
+
+
+@dataclass(frozen=True)
+class DiagSpec:
+    label: str
+    element: str  # e.g. "Ni"
+    spectrum_roman: str  # e.g. "II"
+    num_wave: float
+    den_wave: float
+    den_plus: bool
+
+
+def parse_diag_label(label: str) -> DiagSpec:
+    m = _DIAG_RE.fullmatch(label.strip())
+    if not m:
+        raise ValueError(f"Unsupported diagnostic label format: {label!r}")
+    return DiagSpec(
+        label=label.strip(),
+        element=m.group("elem"),
+        spectrum_roman=m.group("spec"),
+        num_wave=float(m.group("num")),
+        den_wave=float(m.group("den")),
+        den_plus=bool(m.group("plus")),
+    )
+
+
+def ratio_and_err(
+    num: float, den: float, num_err: float, den_err: float
+) -> Tuple[float, float]:
+    """
+    R = num/den
+    σ_R ≈ R * sqrt( (σ_num/num)^2 + (σ_den/den)^2 )
+    """
+    if den <= 0 or num <= 0:
+        return float("nan"), float("nan")
+    R = num / den
+    rel2 = 0.0
+    if num_err is not None and num > 0:
+        rel2 += (num_err / num) ** 2
+    if den_err is not None and den > 0:
+        rel2 += (den_err / den) ** 2
+    return R, abs(R) * math.sqrt(rel2)
+
+
+def findIntensities(spec: DiagSpec, fitsd: list, intensity_list: list, logger=None):
+    # cstr eg "N2_6583", should be matched in fitsd and then the "fractional"
+    # name returned, e.g. N2_6583.7A, to get intensity and error
+    ion = spec.element
+    spectrum = roman.roman2int(spec.spectrum_roman)
+    line = spec.num_wave
+    for entry in fitsd:
+        if (
+            ion == entry["element"]
+            and spectrum == roman.roman2int(entry["spectrum"])
+            and line == float(entry["atomic"])
+        ):
+            for ilist in intensity_list:
+                if ilist["element_pn"] == entry["pnstr"]:
+                    return (ilist["intensity"], ilist["intensity_err"])
+    raise RuntimeError(f"[ERROR] Failed finding intensity for {spec}")
+
+
+def get_line_from_my_dict(
+    spec: DiagSpec, which: str, fitsd, intensity_list, logger=None
+) -> Tuple[float, float]:
+    # which is "num" or "den"
+    if which == "num":
+        wave = spec.num_wave
+        plus = False
+    else:
+        wave = spec.den_wave
+        plus = spec.den_plus
+
+    i, ierr = findIntensities(spec, fitsd, intensity_list, logger)
+
+    # TODO: replace with your own matcher.
+    # Return (intensity, intensity_err) for that wave, or sum if plus=True.
+    raise NotImplementedError
 
 
 def computeTeNePairs(
+    density_diagnostics: list,
+    temperature_diagnostics: list,
+    intensities: list,
+    min_percentage,
+    logger,
+):
+    """
+    For every (T-diagnostic, n-diagnostic) pair:
+      - compute observed ratios + ratio errors
+      - call diags.getCrossTemDen using value_tem/value_den
+    Returns a list of results dicts.
+    """
+    diags = pn.Diagnostics()
+
+    # Register all diagnostics with PyNeb
+    all_labels = list(
+        dict.fromkeys(temperature_diagnostics + density_diagnostics)
+    )  # preserve order, unique
+    for lab in all_labels:
+        diags.addDiag(lab)  # predefined labels in pn.diags_dict
+
+    # Pre-parse
+    T_specs = [parse_diag_label(l) for l in temperature_diagnostics]
+    n_specs = [parse_diag_label(l) for l in density_diagnostics]
+
+    results = []
+
+    # Compute ratios once per diagnostic
+    ratio_cache: Dict[str, Tuple[float, float]] = {}  # label -> (R, Rerr)
+
+    def get_ratio(spec: DiagSpec) -> Tuple[float, float]:
+        if spec.label in ratio_cache:
+            return ratio_cache[spec.label]
+        In, en = get_line(spec, "num")
+        Id, ed = get_line(spec, "den")
+        R, Rerr = ratio_and_err(In, Id, en, ed)
+        ratio_cache[spec.label] = (R, Rerr)
+        return R, Rerr
+
+    # Cross-combine temperature and density diagnostics
+    for t in T_specs:
+        Rt, Rt_err = get_ratio(t)
+        for d in n_specs:
+            Rn, Rn_err = get_ratio(d)
+
+            Te, Ne = diags.getCrossTemDen(
+                t.label,
+                d.label,
+                value_tem=Rt,
+                value_den=Rn,
+            )
+
+            results.append(
+                {
+                    "tem_diag": t.label,
+                    "den_diag": d.label,
+                    "R_tem": Rt,
+                    "R_tem_err": Rt_err,
+                    "R_den": Rn,
+                    "R_den_err": Rn_err,
+                    "Te": Te,
+                    "Ne": Ne,
+                }
+            )
+
+    return results
+
+
+def computeTeNePairs_obsolete(
     density_diagnostics: list,
     tempterature_diagnostics: list,
     pnObs,
@@ -64,8 +229,6 @@ def computeTeNePairs(
     min_percentage,
     logger,
 ):
-    print(density_diagnostics)
-
     def filterPairs(densityd, temperatured, pobs):
         user = [(td, dd) for td in temperatured for dd in densityd]
         diags = pn.Diagnostics()

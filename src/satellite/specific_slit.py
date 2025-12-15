@@ -9,8 +9,9 @@ import warnings
 
 import satellite.fitsutils as fs
 import satellite.intensity as si
-import satellite.cfgio as sc
-import satellite.roman as sr
+
+# import satellite.cfgio as sc
+# import satellite.roman as sr
 import satellite.satlogger as sl
 import satellite.tene as st
 import satellite.ionic_abundancies as sa
@@ -18,6 +19,7 @@ import satellite.abundance as sb
 import satellite.icf as sf
 import satellite.ratios as so
 import satellite.nomenclature as sn
+import satellite.custompnobs as sc
 
 
 def getFitsSlit(fits_fn: str, slit: dict, logger=None):
@@ -199,13 +201,21 @@ def specific_slit_analysis(
 
         logger.info("Setting-up PyNeb ...")
         # PyNeb stuff; PyNeb will read the 'test.dat' file (for the slit).
-        sobs = pn.Observation()
-        sobs.readData(
-            "test.dat", fileFormat="lines_in_rows_err_cols", errIsRelative=False
+        # sobs = pn.Observation()
+        # sobs.readData(
+        #     "test.dat", fileFormat="lines_in_rows_err_cols", errIsRelative=False
+        # )
+        # sobs.def_EBV(label1="H1r_6563A", label2="H1r_4861A", r_theo=2.85)
+        # sobs.extinction.law = ext_law
+        # sobs.correctData(normWave=4861.0)
+        rows = sc.read_simple_lines_file("test.dat")
+        # optional but recommended: you have duplicates like He1r_7281A twice
+        rows = sc._merge_duplicates(rows)
+        # central corrected intensities (relative to Hβ, keeping Hβ=100)
+        corr_factor, rc_central = sc.deredden_and_normalize(
+            rows, ext_law=ext_law, R_V=pn_rv, r_theo=2.85, norm_wave_A=4861.0
         )
-        sobs.def_EBV(label1="H1r_6563A", label2="H1r_4861A", r_theo=2.85)
-        sobs.extinction.law = ext_law
-        sobs.correctData(normWave=4861.0)
+        I_corr = {r.label: r.I_obs * corr_factor[r.label] for r in rows}
 
         # create Monte Carlo simulations untill TeNe diagnostics contains no nan
         nan_diagnostics = True
@@ -218,6 +228,7 @@ def specific_slit_analysis(
         while (
             nan_diagnostics and times_nan_encountered < MAX_NAN_IN_DIAGNOSTICS_ALLOWED
         ):
+            """
             eobs = pn.Observation()
             eobs.readData(
                 "test.dat", fileFormat="lines_in_rows_err_cols", errIsRelative=False
@@ -237,6 +248,17 @@ def specific_slit_analysis(
             ebv_err = eobs.extinction.E_BV.std()
             # 3. Convert to c(Hβ) uncertainty
             chbeta_err = f * ebv_err
+            """
+            # MC fractional uncertainties on corrected intensities + EBV uncertainty
+            rel_sigma, ebv_err = sc.monte_carlo_errors(
+                rows, ext_law=ext_law, R_V=pn_rv, N=monte_carlo_fake_obs, seed=0
+            )
+
+            # c(Hβ) + its uncertainty the same way we did before:
+            RC_test = pn.RedCorr(E_BV=1.0, R_V=pn_rv, law=ext_law)
+            f = RC_test.cHbeta  # conversion from E(B-V) to c(Hβ)
+            chbeta = float(np.atleast_1d(rc_central.cHbeta)[0])
+            chbeta_err = float(f * ebv_err)
 
             # Compute intensity for each FITS/atom; add to global dictionary for printing
             # later on.
@@ -245,12 +267,20 @@ def specific_slit_analysis(
             )
             """Example: global_intensities[1] = {'intensities': [...], 'E_BV': rc.E_BV, 'cHbeta': rc.cHbeta} """
             global_intensities[slit_idx] = {
-                "intensities": si.computeIntensities(
-                    fitsd, sobs, eobs, RC, reference_element, logger
-                ),
-                "E_BV": RC.E_BV,
+                "intensities": [
+                    {
+                        "element_pn": r.label,
+                        "wavelength_A": r.wave_A,
+                        "intensity": I_corr[r.label],
+                        # "intensity_err_rel": rel_sigma[r.label],
+                        # "intensity_err_abs": I_corr[r.label] * rel_sigma[r.label],
+                        "intensity_err": rel_sigma[r.label],
+                    }
+                    for r in rows
+                ],
+                "E_BV": float(np.atleast_1d(rc_central.E_BV)[0]),  # RC.E_BV,
                 "E_BVError": ebv_err,
-                "cHbeta": RC.cHbeta,
+                "cHbeta": chbeta,  # RC.cHbeta,
                 "cHbetaError": chbeta_err,
                 "fac": f,
                 "FHb": findEntry(
@@ -275,20 +305,26 @@ def specific_slit_analysis(
             )
             global_ratios[slit_idx] = {}
             for ratio in ratios:
-                try:
-                    global_ratios[slit_idx][ratio] = so.computeRatio(
-                        ratio, global_intensities[slit_idx]["intensities"], logger
-                    )
-                except:
-                    logger.info("Skipping ratio {:}".format(ratio))
+                # try:
+                global_ratios[slit_idx][ratio] = so.computeRatio(
+                    ratio, cpd, global_intensities[slit_idx]["intensities"], logger
+                )
+                print(f"new ratio: {global_ratios[slit_idx][ratio]}")
+                # except:
+                #    logger.info("Skipping ratio {:}".format(ratio))
 
             # Compute diagnostics (te/ne pairs)
             logger.info(
                 f"Monte Carlo [{times_nan_encountered}/{MAX_NAN_IN_DIAGNOSTICS_ALLOWED}]: computing diagnostics ..."
             )
             global_tene[slit_idx], nan_diagnostics = st.computeTeNePairs(
-                density_diagnostics, tempterature_diagnostics, sobs, eobs, 80.0, logger
+                density_diagnostics,
+                tempterature_diagnostics,
+                global_intensities[slit_idx],
+                80.0,
+                logger,
             )
+            sys.exit(99)
             if nan_diagnostics:
                 logger.warning(
                     f"Encountered nan value in diagnostics; restarting computations for slit! ({times_nan_encountered}/{MAX_NAN_IN_DIAGNOSTICS_ALLOWED})"

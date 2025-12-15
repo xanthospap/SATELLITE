@@ -1,4 +1,6 @@
 import numpy as np
+import re
+from satellite import roman
 
 
 def partialResolve(pstr: str) -> list:
@@ -68,23 +70,27 @@ def resolveRatioStr(rstr: str):
     return partialResolve(nom), partialResolve(denom)
 
 
-def computeRatio(ratio: str, intensity_list: list, logger=None):
-    def getIntensity(element):
-        for obj in intensity_list:
-            if obj["element"] == element:
-                return obj["intensity"], obj["intensity_err"]
-        if logger:
-            logger.error(
-                "Cannot find element {:} for ratio {:} in intensities list!".format(
-                    element, ratio
-                )
-            )
-        raise RuntimeError(
-            "[ERROR] Cannot find element {:} for ratio {:} in intensities list!".format(
-                element, ratio
-            )
-        )
-        return None, None
+def findIntensities(cstr: str, fitsd: list, intensity_list: list, logger=None):
+    # cstr eg "N2_6583", should be matched in fitsd and then the "fractional"
+    # name returned, e.g. N2_6583.7A, to get intensity and error
+    pat = re.compile(r"^([A-Z][a-z]*)(\d+)_([0-9]+(?:\.[0-9]+)?)$")
+    m = pat.fullmatch(cstr)
+    ion = m.group(1)  # 'Fe'
+    spectrum = int(m.group(2))  # 2
+    line = float(m.group(3))  # 5261.6
+    for entry in fitsd:
+        if (
+            ion == entry["element"]
+            and spectrum == roman.roman2int(entry["spectrum"])
+            and line == float(entry["atomic"])
+        ):
+            for ilist in intensity_list:
+                if ilist["element_pn"] == entry["pnstr"]:
+                    return (ilist["intensity"], ilist["intensity_err"])
+    raise RuntimeError(f"[ERROR] Failed finding intensity for {cstr}")
+
+
+def computeRatio(ratio: str, fitsd: list, intensity_list: list, logger=None):
 
     ar, par = resolveRatioStr(ratio)
     var = 0e0
@@ -93,17 +99,17 @@ def computeRatio(ratio: str, intensity_list: list, logger=None):
     par2 = 0e0
     for idx in range(1, len(ar), 2):
         # val, err = getIntensity(sc.satellite_str2pyneb_str(ar[idx]))
-        val, err = getIntensity(ar[idx])
+        val, err = findIntensities(ar[idx], fitsd, intensity_list)
         var += ar[idx - 1] * val
         # par1 += ar[idx - 1] * (err / val * np.log(10))
-        par1 += ar[idx - 1] * ar[idx-1] * err * err
+        par1 += ar[idx - 1] * ar[idx - 1] * err * err
     for idx in range(1, len(par), 2):
         # val, err = getIntensity(sc.satellite_str2pyneb_str(par[idx]))
-        val, err = getIntensity(par[idx])
+        val, err = findIntensities(par[idx], fitsd, intensity_list)
         vpar += par[idx - 1] * val
         # par2 += par[idx - 1] * (err / val * np.log(10))
-        par2 += par[idx - 1] * par[idx-1] * err * err
-    return var / vpar, np.sqrt(par1/(vpar*vpar) + par2*var*var/(vpar*vpar))
+        par2 += par[idx - 1] * par[idx - 1] * err * err
+    return var / vpar, np.sqrt(par1 / (vpar * vpar) + par2 * var * var / (vpar * vpar))
 
 
 def printRatios(dict_of_ratios, fn, logger) -> str:
@@ -147,7 +153,8 @@ def printRatios(dict_of_ratios, fn, logger) -> str:
                         "{:15.7e} {:15.7e} ".format(
                             # np.log10(entry[0]), np.log10(entry[1])
                             # np.log10(entry[0]), (1e0/entry[0]/np.log(10)) * entry[1]
-                            entry[0], entry[1]
+                            entry[0],
+                            entry[1],
                         ),
                         file=fout,
                         end="",
