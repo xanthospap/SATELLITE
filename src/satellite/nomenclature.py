@@ -122,7 +122,6 @@ def best_pyneb_line(
     element: str,
     spectrum: Union[int, str],
     wavelength: WaveLike,
-    *,
     logger=None,
 ) -> Tuple[str, float]:
     """
@@ -186,4 +185,8 @@ def best_pyneb_line(
         closest_ang = float(waves[i])
 
     frag = _format_ang_label(closest_ang)
+
+    logger.info(
+        f"Best fit for line {element}{spec}_{target_ang} in pyneb is {ion_key}_{frag}"
+    )
     return f"{ion_key}_{frag}", closest_ang

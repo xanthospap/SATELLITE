@@ -1,5 +1,5 @@
 import re
-
+from typing import Any, Dict, Tuple
 import numpy as np
 import pyneb as pn
 
@@ -7,71 +7,70 @@ import satellite.cfgio as sc
 import satellite.roman as sr
 import satellite.tene as tn
 import satellite.nomenclature as sn
+from satellite import intensity as si
 
 
-def extract_wavelength(line_id):
+def extract_wavelength(line_id: str) -> Optional[str]:
     """
-    Convert a line identifier (e.g., 'O2_3729A') to the corresponding 'L(wavelength)' format.
-
-    Parameters
-    ----------
-    line_id: str
-        Line identifier (e.g., 'O2_3729A')
-
-    Return
-    ------
-    str:
-        The to_eval string (e.g., 'L(3729)') or None if invalid
+    'O2_3729A' or 'O2_3729.7A' -> 'L(3729)' or 'L(3729.7)'
     """
     try:
-        # Extract the wavelength (everything after the last underscore)
-        wavelength = line_id.split("_")[-1].replace("A", "")  # Remove 'A' if present
-        # Ensure the extracted value is a valid number
-        if wavelength.isdigit():
-            return f"L({wavelength})"
-    except Exception as e:
-        print(f"Error processing {line_id}: {e}")
-    return None  # Return None if parsing fails
+        w = line_id.split("_")[-1]
+        w = w.replace("A", "").strip()
+        float(w)  # validate
+        return f"L({w})"
+    except Exception:
+        return None
 
 
-def get_atom_model_obsolete(element: str, ion: int, logger=None):
+_LINE_PN_RE = re.compile(r"^(?P<ion>[A-Za-z0-9]+)_(?P<w>\d+(?:\.\d+)?)A$")
+
+
+def ion_key_from_entry(entry: Dict[str, Any]) -> str:
     """
-    Determines whether to use pn.RecAtom() (for recombination lines)
-    or pn.Atom() (for collisional excitation lines).
-
-    Parameters
-    ----------
-        element: str
-            The element symbol (e.g., 'He', 'O')
-        ion: int
-            The ionization state (e.g., 1 for He I, 2 for He II)
-
-    Returns
-    -------
-        A PyNeb Atom or RecAtom object
-
-    Example
-    -------
-        >>> atoms = [
-            ("H", 1),  # H I (Recombination)
-            ("He", 1), # He I (Recombination)
-            ("He", 2), # He II (Recombination)
-            ("O", 1),  # O I (Collisional)
-            ("O", 2),  # O II (Collisional)
-            ("N", 2),  # N II (Collisional)
-        ]
+    Returns the ion key used by your intensities index, e.g.
+      N + II -> 'N2'
+      H + I (RL) -> 'H1r'
     """
-    rec_atom_elements = {"H", "He"}
-    if element in rec_atom_elements:
+    element = entry["element"]
+    ion_int = sr.roman2int(entry["spectrum"])  # you already import roman
+    ref_type = entry.get("ref_type", "CEL").upper()
+    suffix = "r" if (ref_type == "RL" and element in {"H", "He"}) else ""
+    return f"{element}{ion_int}{suffix}"
+
+
+def matched_line_intensity_for_entry(
+    idx: Dict[str, list],
+    entry: Dict[str, Any],
+    tol_A: float,
+    logger=None,
+) -> Tuple[str, float, float]:
+    """
+    Returns (pn_element_label, intensity, sigma_intensity) for this fit entry.
+    """
+    ion = ion_key_from_entry(entry)
+    target_A = float(entry["atomic"])  # your line wavelength (can be float)
+
+    row = si.match_line(idx, ion, target_A, tol_A, logger)  # <-- your existing function
+
+    pn_element = row["element_pn"]  # e.g. 'N2_5754.6A'
+    I_c = float(row["intensity"])
+    rel = float(row["intensity_err"])  # relative
+    sigma_I = abs(I_c) * rel  # absolute sigma
+
+    if logger:
         logger.debug(
-            f"Creating recombination atom from entry {element} {ion} for ionic abundancies. pn.RecAtom({element}, {ion})"
+            f"Abundance line match: {entry['element']}{entry['spectrum']}@{target_A}A "
+            f"-> {pn_element} (meas {row['wavelength_A']}A)"
         )
-        return pn.RecAtom(element, ion)
-    else:
-        logger.debug(
-            f"Creating (default) atom from entry {element} {ion} for ionic abundancies."
-        )
-        return pn.Atom(element, ion)
+    return pn_element, I_c, sigma_I
+
+
+def _parse_pn_line_label(pn_element: str) -> Tuple[str, float]:
+    m = _LINE_PN_RE.fullmatch(pn_element.strip())
+    if not m:
+        raise ValueError(f"Bad pn line label: {pn_element!r}")
+    return m.group("ion"), float(m.group("w"))
 
 
 def get_atom_model(dct_entry, logger=None):
@@ -118,14 +117,35 @@ def refTenNe2PyNebPair(ref_tene):
     )
 
 
-def computeIonicAbundancies(fitsd, tene_dict, pnObs, pnErrObs, min_percentage, logger):
+def computeIonicAbundancies(
+    fitsd,
+    tene_dict,
+    intensities_payload,
+    min_percentage,
+    logger,
+    *,
+    tol_A: float = 1.0,
+    mc_N: int = 1000,
+    seed: int = 0,
+):
     ionic_abundancies_dict = []
+
+    idx = si.build_intensity_index(intensities_payload)
+    rng = np.random.default_rng(seed)
 
     def ref_tene_pair(tene):
         for entry in tene_dict:
             if entry["tene_pair"] == tene:
                 return entry
         return None
+
+    def inspect_mc_err_local(arr: List[float]) -> Tuple[np.ndarray, bool]:
+        a = np.asarray(arr, dtype=float).ravel()
+        ok = np.isfinite(a)
+        frac = ok.mean() if a.size else 0.0
+        if frac < min_percentage:
+            return a[ok], False
+        return a[ok], True
 
     for entry in fitsd:
         reftene = ref_tene_pair(refTenNe2PyNebPair(entry["ref_tene"]))
@@ -136,63 +156,98 @@ def computeIonicAbundancies(fitsd, tene_dict, pnObs, pnErrObs, min_percentage, l
             return []
 
         pn_atom = get_atom_model(entry, logger)
-        pn_element, _ = sn.objectIntensityPyNebCode(
-            entry["element"], entry["spectrum"], entry["atomic"], logger
-        )
-        logger.debug(
-            f'computeIonicAbundancies: entry {entry["element"]}{entry["spectrum"]}{entry["atomic"]} transformed to {pn_element}'
-        )
-        sabd = pn_atom.getIonAbundance(
-            int_ratio=pnObs.getIntens(0)[pn_element],
-            tem=reftene["sT"],
-            den=reftene["sN"],
-            to_eval=extract_wavelength(pn_element),
-            Hbeta=100.0,
-        )[0]
-        if not np.isfinite(sabd):
+        # pn_element, _ = sn.objectIntensityPyNebCode(
+        #    entry["element"], entry["spectrum"], entry["atomic"], logger
+        # )
+        # logger.debug(
+        #    f'computeIonicAbundancies: entry {entry["element"]}{entry["spectrum"]}{entry["atomic"]} transformed to {pn_element}'
+        # )
+        # Use your same matching strategy as diagnostics, but per-entry
+        try:
+            pn_element, I_c, sigma_I = matched_line_intensity_for_entry(
+                idx, entry, tol_A, logger
+            )
+        except:
             logger.warning(
-                f"Central ionic abundance for {pn_element} is non-finite: {sabd!r} "
-                f"(T={reftene['sT']}, Ne={reftene['sN']}, "
-                f"int_ratio={pnObs.getIntens(0)[pn_element]}, "
-                f"to_eval={extract_wavelength(pn_element)!r})"
+                f"Cannot match line for {entry['element']}{entry['spectrum']}_{entry['atomic']} aka {entry['pnstr']}, skipping."
             )
             continue
 
-        # Uncertainty, loop over MC simulated inttensity ratios ...
-        # note that MC lengths can be different ...
-        int_mc = pnErrObs.getIntens()[pn_element]
-        n_common = min(len(int_mc), len(reftene["eT"]), len(reftene["eN"]))
+        # to_eval = extract_wavelength(pn_element)
+        to_eval = extract_wavelength(pn_element)
+        if to_eval is None:
+            logger.warning(f"Cannot build to_eval for {pn_element}, skipping.")
+            continue
+
+        # central abundance
+        sabd = pn_atom.getIonAbundance(
+            int_ratio=I_c,
+            tem=reftene["sT"],
+            den=reftene["sN"],
+            to_eval=to_eval,
+            Hbeta=100.0,
+        )
+
+        if not np.isfinite(sabd):
+            logger.warning(
+                f"Central ionic abundance for {pn_element} is non-finite: {sabd!r} "
+                f"(T={reftene['sT']}, Ne={reftene['sN']}, int_ratio={I_c}, to_eval={to_eval!r})"
+            )
+            continue
+
+        # ---------- MC uncertainty (replaces pnErrObs.getIntens()[pn_element] + reftene['eT']['eN'] arrays) ----------
+        # We only have scalar Te/Ne errors now (std), so we sample Te/Ne around the central values.
+        eT = float(reftene.get("eT", np.nan))
+        eN = float(reftene.get("eN", np.nan))
+
+        I_mc = rng.normal(I_c, sigma_I, size=mc_N)
+        I_mc = np.clip(I_mc, 0.0, None)
+
+        if np.isfinite(eT) and eT > 0:
+            T_mc = rng.normal(float(reftene["sT"]), eT, size=mc_N)
+            T_mc = np.clip(T_mc, 1.0, None)
+        else:
+            T_mc = np.full(mc_N, float(reftene["sT"]))
+
+        if np.isfinite(eN) and eN > 0:
+            N_mc = rng.normal(float(reftene["sN"]), eN, size=mc_N)
+            N_mc = np.clip(N_mc, 1e-6, None)
+        else:
+            N_mc = np.full(mc_N, float(reftene["sN"]))
+
         tar = []
-        for idx in range(n_common):
+        for k in range(mc_N):
             tar.append(
                 pn_atom.getIonAbundance(
-                    int_ratio=int_mc[idx],
-                    tem=reftene["eT"][idx],
-                    den=reftene["eN"][idx],
-                    to_eval=extract_wavelength(pn_element),
+                    int_ratio=float(I_mc[k]),
+                    tem=float(T_mc[k]),
+                    den=float(N_mc[k]),
+                    to_eval=to_eval,
                     Hbeta=100.0,
                 )
             )
-        # Remove nan values up to given percent, otherwise raise
-        eabd_array, ok = tn.inspectMcErr(tar, min_percentage, logger)
+
+        eabd_array, ok = inspect_mc_err_local(tar)
         if not ok:
             logger.error(
-                f"Too many nan values for MC getIonAbundance at computeIonicAbundancies for {pn_element}. Limit was {100.-min_percentage}"
+                f"Too many non-finite MC getIonAbundance for {pn_element}. "
+                f"Limit was {100.0*(1.0-min_percentage):.1f}% bad draws"
             )
             raise RuntimeError(
-                f"Too many nan values for MC getIonAbundance at computeIonicAbundancies for {pn_element}. Limit was {100.-min_percentage}"
+                f"Too many non-finite MC getIonAbundance for {pn_element}."
             )
-        assert not (np.isnan(eabd_array).any() or np.isnan(np.std(eabd_array)))
+
         ionic_abundancies_dict.append(
             {
                 "element": entry["element"],
                 "spectrum": entry["spectrum"],
                 "atomic": entry["atomic"],
                 "pn_element": pn_element,
-                "abundance": sabd,
-                "abundance_error": np.std(eabd_array),
+                "abundance": float(sabd),
+                "abundance_error": float(np.std(eabd_array)),
             }
         )
+
     return ionic_abundancies_dict
 
 

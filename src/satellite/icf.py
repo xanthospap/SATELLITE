@@ -409,8 +409,21 @@ def computeIcfsWithErrors(abundancies, logger=None):
     results = {}
 
     # get omega and u
-    eo = omega(renamed_abunds)
-    eu = U(renamed_abunds)
+    try:
+        eo = omega(renamed_abunds)
+    except:
+        eo = np.nan
+        logger.warning(
+            "Failed computing omega values from abundancies {[k for k in renamed_abunds]}"
+        )
+
+    try:
+        eu = U(renamed_abunds)
+    except:
+        eu = np.nan
+        logger.warning(
+            "Failed computing U values from abundancies {[k for k in renamed_abunds]}"
+        )
 
     for icf_name, total_abund in ne.items():
         if not np.isfinite(total_abund):

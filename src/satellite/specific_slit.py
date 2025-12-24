@@ -6,6 +6,7 @@ import sys
 import re
 import logging
 import warnings
+import datetime
 
 import satellite.fitsutils as fs
 import satellite.intensity as si
@@ -62,6 +63,7 @@ def extract_ion(label):
 
 
 reference_element = {"element": "H", "spectrum": "i", "atomic": 4861}
+WAVELENGTH_TOLERANCE_FOR_TENE = 0.6
 
 
 def findEntry(element, spectrum, atomic, _list):
@@ -77,11 +79,11 @@ def findEntry(element, spectrum, atomic, _list):
     )
 
 
-def getIonTransmittionLines(fitsd: list):
+def getIonTransmittionLines(fitsd: list, logger):
     cpd = copy.deepcopy(fitsd)
     for j, ion in enumerate(fitsd):
         pyneb_str, wavelength = sn.best_pyneb_line(
-            ion["element"], ion["spectrum"], ion["atomic"]
+            ion["element"], ion["spectrum"], ion["atomic"], logger
         )
         cpd[j]["pnstr"] = pyneb_str
         cpd[j]["pn_line"] = wavelength
@@ -156,7 +158,7 @@ def specific_slit_analysis(
     global_icfs = {}
 
     # clear-up transmittion lines using PyNeb
-    fitsd = getIonTransmittionLines(fitsd)
+    fitsd = getIonTransmittionLines(fitsd, logger)
 
     # A file to write out corners
     fcrn = open(corners_out, "w")
@@ -209,7 +211,7 @@ def specific_slit_analysis(
         # sobs.extinction.law = ext_law
         # sobs.correctData(normWave=4861.0)
         rows = sc.read_simple_lines_file("test.dat")
-        # optional but recommended: you have duplicates like He1r_7281A twice
+        # optional but recommended: we have duplicates like He1r_7281A twice
         rows = sc._merge_duplicates(rows)
         # central corrected intensities (relative to Hβ, keeping Hβ=100)
         corr_factor, rc_central = sc.deredden_and_normalize(
@@ -317,21 +319,24 @@ def specific_slit_analysis(
             logger.info(
                 f"Monte Carlo [{times_nan_encountered}/{MAX_NAN_IN_DIAGNOSTICS_ALLOWED}]: computing diagnostics ..."
             )
-            global_tene[slit_idx], nan_diagnostics = st.computeTeNePairs(
+            global_tene[slit_idx], diagnostics_ok = st.computeTeNePairs(
                 density_diagnostics,
                 tempterature_diagnostics,
                 global_intensities[slit_idx],
-                80.0,
+                WAVELENGTH_TOLERANCE_FOR_TENE,
                 logger,
+                mc_N=monte_carlo_fake_obs,
+                seed=int(datetime.datetime.now().strftime("%Y%m%d%H%M%S")),
             )
-            sys.exit(99)
+            nan_diagnostics = not diagnostics_ok
+
             if nan_diagnostics:
                 logger.warning(
                     f"Encountered nan value in diagnostics; restarting computations for slit! ({times_nan_encountered}/{MAX_NAN_IN_DIAGNOSTICS_ALLOWED})"
                 )
             times_nan_encountered += 1
 
-        if nan_diagnostics or (times_nan_encountered >= MAX_NAN_IN_DIAGNOSTICS_ALLOWED):
+        if times_nan_encountered >= MAX_NAN_IN_DIAGNOSTICS_ALLOWED:
             msg = f"ERROR. Failed computing non-nan diagnostics after {times_nan_encountered} tries. Giving up!"
             logger.error(msg)
             raise RuntimeError(msg)
@@ -339,7 +344,14 @@ def specific_slit_analysis(
         # Compute Ionic Abundancies
         logger.debug("Calling computeIonicAbundancies ...")
         global_ionic_abundancies[slit_idx] = sa.computeIonicAbundancies(
-            cpd, global_tene[slit_idx], sobs, eobs, 80.0, logger
+            cpd,
+            global_tene[slit_idx],
+            global_intensities[slit_idx],
+            1 - max_nan_in_diagnostics_allowed_percentage,
+            logger,
+            tol_A=WAVELENGTH_TOLERANCE_FOR_TENE,
+            mc_N=monte_carlo_fake_obs,
+            seed=int(datetime.datetime.now().strftime("%Y%m%d%H%M%S")),
         )
 
         # Compute abundancies per element, e.g.
@@ -350,6 +362,7 @@ def specific_slit_analysis(
 
         logger.debug("Calling computeIcfsWithErrors ...")
         global_icfs[slit_idx] = sf.computeIcfsWithErrors(elemspec_abundancies, logger)
+
         logger.debug("Calling  ionicAbundance2elementAbundance ...")
         global_element_abundancies[slit_idx] = sf.ionicAbundance2elementAbundance(
             elemspec_abundancies, logger

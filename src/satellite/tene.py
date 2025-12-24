@@ -1,316 +1,231 @@
+import copy
+import re
+import math
 import pyneb as pn
 import numpy as np
-import copy
-from satellite import satdebug as db
-from satellite import roman
-import re
 from dataclasses import dataclass
-from typing import List, Tuple, Dict
-import math
-from typing import Optional
+from typing import List, Tuple, Dict, Optional
 
-MIN_VALID_PERCENTAGE = 70.0  # e.g. require at least 70% non-NaN values
+from satellite import satdebug as db
+from satellite import intensity
+from satellite import roman
 
 
-def inspectMcErr(err_array, min_percentage=MIN_VALID_PERCENTAGE, logger=None):
+# ---- parse the built-in diagnostic expressions: e.g.
+# "(L(6548)+L(6584))/L(5755)"  -> list of waves in numerator and denominator
+_L_RE = re.compile(r"L\(\s*(\d+(?:\.\d+)?)\s*\)")
+
+
+def _split_top_level_div(expr: str) -> Tuple[str, str]:
+    depth = 0
+    for i, ch in enumerate(expr):
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+        elif ch == "/" and depth == 0:
+            return expr[:i], expr[i + 1 :]
+    raise ValueError(f"No top-level '/' in expression: {expr!r}")
+
+
+def _waves_from_expr(expr: str) -> Tuple[List[float], List[float]]:
+    num_expr, den_expr = _split_top_level_div(expr)
+    num = [float(x) for x in _L_RE.findall(num_expr)]
+    den = [float(x) for x in _L_RE.findall(den_expr)]
+    if not num or not den:
+        raise ValueError(f"Could not extract waves from: {expr!r}")
+    return num, den
+
+
+def sum_intensities(
+    idx: Dict[str, List[Dict[str, Any]]],
+    ion: str,
+    waves_A: List[float],
+    tol_A: float,
+    logger,
+) -> Tuple[float, float, List[Tuple[float, str, float]]]:
     """
-    Convert an array of MC error realisations into a single scalar error.
-
-    - If the fraction of non-NaN values is below `min_percentage`,
-      we treat the diagnostic as failed and return (None, False).
-    - Otherwise we compute the std dev over the non-NaN values and
-      return (sigma, True).
+    Sum intensities for a list of target wavelengths (Å).
+    Error combined in quadrature (assumes independent).
+    Returns (sum_I, sum_err, matches) where matches records what got matched.
     """
-    arr = np.asarray(err_array, dtype=float)
-
-    if arr.size == 0:
-        logger.warning("inspectMcErr: empty error array; failing diagnostic")
-        return None, False
-
-    nan_mask = np.isnan(arr)
-    n_total = arr.size
-    n_nan = nan_mask.sum()
-    n_valid = n_total - n_nan
-
-    valid_percent = 100.0 * n_valid / n_total
-    nan_percent = 100.0 - valid_percent
-
-    if n_nan > 0:
-        logger.debug(
-            f"inspectMcErr: {n_nan}/{n_total} NaN values "
-            f"({nan_percent:.1f}% NaN, {valid_percent:.1f}% valid)"
-        )
-
-    # Too many NaNs → fail
-    if valid_percent < min_percentage:
-        logger.warning(
-            "inspectMcErr: too many NaN MC realisations "
-            f"({nan_percent:.1f}% > allowed {100.0 - min_percentage:.1f}%). "
-            "Marking diagnostic as failed."
-        )
-        return None, False
-
-    # Enough valid values → pass
-    # valid_vals = arr[~nan_mask]
-    # sigma = float(np.std(valid_vals, ddof=1))  # ddof=1 → sample std dev
-
-    return arr[~nan_mask], True
-
-
-_DIAG_RE = re.compile(
-    r"""^
-        \[
-          (?P<elem>[A-Z][a-z]*)          # element symbol: N, Ni, Fe, ...
-          (?P<spec>[IVXLCDM]+)           # roman spectrum: I, II, III, ...
-        \]
-        \s*
-        (?P<num>\d+(?:\.\d+)?)           # numerator wavelength
-        \s*/\s*
-        (?P<den>\d+(?:\.\d+)?)           # denominator wavelength
-        (?P<plus>\+)?                    # optional '+'
-        $
-    """,
-    re.VERBOSE,
-)
-
-
-@dataclass(frozen=True)
-class DiagSpec:
-    label: str
-    element: str  # e.g. "Ni"
-    spectrum_roman: str  # e.g. "II"
-    num_wave: float
-    den_wave: float
-    den_plus: bool
-
-
-def parse_diag_label(label: str) -> DiagSpec:
-    m = _DIAG_RE.fullmatch(label.strip())
-    if not m:
-        raise ValueError(f"Unsupported diagnostic label format: {label!r}")
-    return DiagSpec(
-        label=label.strip(),
-        element=m.group("elem"),
-        spectrum_roman=m.group("spec"),
-        num_wave=float(m.group("num")),
-        den_wave=float(m.group("den")),
-        den_plus=bool(m.group("plus")),
-    )
+    I = 0.0
+    e2 = 0.0
+    matches: List[Tuple[float, str, float]] = []
+    for w in waves_A:
+        row = intensity.match_line(idx, ion, w, tol_A, logger)
+        Ii = float(row["intensity"])
+        rel = float(row["intensity_err"])  # relative (fractional) error
+        si = abs(Ii) * rel  # absolute sigma
+        I += Ii
+        e2 += si * si
+        matches.append((w, row["element_pn"], float(row["wavelength_A"])))
+    return I, math.sqrt(e2), matches
 
 
 def ratio_and_err(
     num: float, den: float, num_err: float, den_err: float
 ) -> Tuple[float, float]:
     """
-    R = num/den
-    σ_R ≈ R * sqrt( (σ_num/num)^2 + (σ_den/den)^2 )
+    R = num/den, error via standard propagation (independent).
     """
-    if den <= 0 or num <= 0:
+    if num <= 0.0 or den <= 0.0:
         return float("nan"), float("nan")
     R = num / den
     rel2 = 0.0
-    if num_err is not None and num > 0:
+    if num_err > 0 and num > 0:
         rel2 += (num_err / num) ** 2
-    if den_err is not None and den > 0:
+    if den_err > 0 and den > 0:
         rel2 += (den_err / den) ** 2
     return R, abs(R) * math.sqrt(rel2)
 
 
-def findIntensities(spec: DiagSpec, fitsd: list, intensity_list: list, logger=None):
-    # cstr eg "N2_6583", should be matched in fitsd and then the "fractional"
-    # name returned, e.g. N2_6583.7A, to get intensity and error
-    ion = spec.element
-    spectrum = roman.roman2int(spec.spectrum_roman)
-    line = spec.num_wave
-    for entry in fitsd:
-        if (
-            ion == entry["element"]
-            and spectrum == roman.roman2int(entry["spectrum"])
-            and line == float(entry["atomic"])
-        ):
-            for ilist in intensity_list:
-                if ilist["element_pn"] == entry["pnstr"]:
-                    return (ilist["intensity"], ilist["intensity_err"])
-    raise RuntimeError(f"[ERROR] Failed finding intensity for {spec}")
+def observed_ratio_for_diag(
+    diag_label: str,
+    idx: Dict[str, List[Dict[str, Any]]],
+    tol_A: float,
+    logger=None,
+) -> Tuple[float, float, Dict[str, Any]]:
+    """
+    Example in:
+    ------------
+    diag_label=[NII] 5755/6584+
 
+    Uses pn.diags_dict to expand '+' (because it's encoded in the expression),
+    then matches measured lines by nearest wavelength.
+    """
+    if diag_label not in pn.diags_dict:
+        raise KeyError(
+            f"{diag_label!r} not found in pn.diags_dict. "
+            f"If it's custom, you must addDiag(label, tuple) first."
+        )
 
-def get_line_from_my_dict(
-    spec: DiagSpec, which: str, fitsd, intensity_list, logger=None
-) -> Tuple[float, float]:
-    # which is "num" or "den"
-    if which == "num":
-        wave = spec.num_wave
-        plus = False
-    else:
-        wave = spec.den_wave
-        plus = spec.den_plus
+    ion, expr, _err_expr = pn.diags_dict[diag_label]
+    # e.g. ion=N2, expr=L(5755)/(L(6548)+L(6584)),
+    # _err_expr=RMS([E(6548)*L(6548)/(L(6548)+L(6584)), E(6584)*L(6584)/(L(6584)+L(6548)), E(5755)])
 
-    i, ierr = findIntensities(spec, fitsd, intensity_list, logger)
+    num_w, den_w = _waves_from_expr(expr)
+    # e.g. num_w=[5755.0], den_w=[6548.0, 6584.0]
+    logger.info(
+        f"Computing diagnostic from {expr}; nominator waves:{num_w}, denominator waves:{den_w}"
+    )
 
-    # TODO: replace with your own matcher.
-    # Return (intensity, intensity_err) for that wave, or sum if plus=True.
-    raise NotImplementedError
+    # sum intensities for the different lines in nominator and denominator
+    num_I, num_e, num_matches = sum_intensities(idx, ion, num_w, tol_A, logger)
+    den_I, den_e, den_matches = sum_intensities(idx, ion, den_w, tol_A, logger)
+
+    R, Rerr = ratio_and_err(num_I, den_I, num_e, den_e)
+    meta = {
+        "ion": ion,
+        "expr": expr,
+        "num_waves": num_w,
+        "den_waves": den_w,
+        "num_matches": num_matches,
+        "den_matches": den_matches,
+        "num_sum": num_I,
+        "den_sum": den_I,
+    }
+    logger.info(f"Macthed waves in nominator   (summed): {[n[1] for n in num_matches]}")
+    logger.info(f"Macthed waves in denominator (summed): {[n[1] for n in den_matches]}")
+
+    return R, Rerr, meta
 
 
 def computeTeNePairs(
-    density_diagnostics: list,
-    temperature_diagnostics: list,
-    intensities: list,
-    min_percentage,
-    logger,
-):
+    density_diagnostics: List[str],
+    temperature_diagnostics: List[str],
+    intensities_payload: Dict[str, Any],
+    tol_A: float,
+    logger=None,
+    *,
+    mc_N: int = 1000,
+    seed: int = 0,
+    min_percentage: float = 0.7,  # like our old inspectMcErr threshold
+) -> Dict[str, Any]:
     """
-    For every (T-diagnostic, n-diagnostic) pair:
-      - compute observed ratios + ratio errors
-      - call diags.getCrossTemDen using value_tem/value_den
-    Returns a list of results dicts.
+    - add all diags to pn.Diagnostics
+    - compute observed ratios from your intensity list (no Observation)
+    - call getCrossTemDen(value_tem=..., value_den=...) for each pair
     """
+
+    def _inspect_mc_err(arr: np.ndarray) -> Tuple[float, bool]:
+        a = np.asarray(arr, dtype=float).ravel()
+        ok = np.isfinite(a)
+        frac = ok.mean() if a.size else 0.0
+        if frac < min_percentage:
+            if logger:
+                logger.warning(
+                    f"MC coverage too low: {frac:.3f} < {min_percentage:.3f}"
+                )
+            return float("nan"), False
+        return float(np.nanstd(a)), True
+
+    # for MC simulations
+    rng = np.random.default_rng(seed)
+
+    # build index
+    idx = intensity.build_intensity_index(intensities_payload)
+
+    # collect/combine user-defined diagnostics
     diags = pn.Diagnostics()
+    all_diags = list(dict.fromkeys(temperature_diagnostics + density_diagnostics))
+    for d in all_diags:
+        diags.addDiag(d)  # built-in labels like [SII], [NII], etc.
 
-    # Register all diagnostics with PyNeb
-    all_labels = list(
-        dict.fromkeys(temperature_diagnostics + density_diagnostics)
-    )  # preserve order, unique
-    for lab in all_labels:
-        diags.addDiag(lab)  # predefined labels in pn.diags_dict
+    # compute ratios once
+    ratio_info: Dict[str, Dict[str, Any]] = {}
+    for d in all_diags:
+        R, Rerr, meta = observed_ratio_for_diag(d, idx, tol_A, logger)
+        ratio_info[d] = {"R": float(R), "Rerr": float(Rerr), **meta}
 
-    # Pre-parse
-    T_specs = [parse_diag_label(l) for l in temperature_diagnostics]
-    n_specs = [parse_diag_label(l) for l in density_diagnostics]
+    # to be returned ...
+    tene_slit_dict: List[Dict[str, Any]] = []
 
-    results = []
+    # solve Te/Ne for every T x n combination
+    for t in temperature_diagnostics:
+        for n in density_diagnostics:
+            Rt = ratio_info[t]["R"]
+            Rn = ratio_info[n]["R"]
+            Rt_err = ratio_info[t]["Rerr"]
+            Rn_err = ratio_info[n]["Rerr"]
 
-    # Compute ratios once per diagnostic
-    ratio_cache: Dict[str, Tuple[float, float]] = {}  # label -> (R, Rerr)
+            # skip invalid ratios
+            if not (np.isfinite(Rt) and np.isfinite(Rn)):
+                if logger:
+                    logger.warning(
+                        f"Skipping {(t, n)} due to invalid ratio(s): Rt={Rt}, Rn={Rn}"
+                    )
+                continue
 
-    def get_ratio(spec: DiagSpec) -> Tuple[float, float]:
-        if spec.label in ratio_cache:
-            return ratio_cache[spec.label]
-        In, en = get_line(spec, "num")
-        Id, ed = get_line(spec, "den")
-        R, Rerr = ratio_and_err(In, Id, en, ed)
-        ratio_cache[spec.label] = (R, Rerr)
-        return R, Rerr
+            # central Te/Ne (sT, sN)
+            st, sn = diags.getCrossTemDen(t, n, value_tem=Rt, value_den=Rn)
+            st = float(np.atleast_1d(st)[0])
+            sn = float(np.atleast_1d(sn)[0])
 
-    # Cross-combine temperature and density diagnostics
-    for t in T_specs:
-        Rt, Rt_err = get_ratio(t)
-        for d in n_specs:
-            Rn, Rn_err = get_ratio(d)
+            # MC on ratios -> MC Te/Ne
+            Rt_mc = rng.normal(Rt, Rt_err, size=mc_N)
+            Rn_mc = rng.normal(Rn, Rn_err, size=mc_N)
+            # ratios should be positive
+            Rt_mc = np.clip(Rt_mc, 1e-30, None)
+            Rn_mc = np.clip(Rn_mc, 1e-30, None)
+            Te_mc, Ne_mc = diags.getCrossTemDen(t, n, value_tem=Rt_mc, value_den=Rn_mc)
 
-            Te, Ne = diags.getCrossTemDen(
-                t.label,
-                d.label,
-                value_tem=Rt,
-                value_den=Rn,
-            )
+            et, okT = _inspect_mc_err(Te_mc)
+            en, okN = _inspect_mc_err(Ne_mc)
+            if not (okT and okN):
+                logger.warning(f"MC diagnostics failed for TeNe pair {t}-{n}")
 
-            results.append(
+            tene_slit_dict.append(
                 {
-                    "tem_diag": t.label,
-                    "den_diag": d.label,
-                    "R_tem": Rt,
-                    "R_tem_err": Rt_err,
-                    "R_den": Rn,
-                    "R_den_err": Rn_err,
-                    "Te": Te,
-                    "Ne": Ne,
+                    "tene_pair": (t, n),
+                    "sT": st,
+                    "sN": sn,
+                    "eT": et,
+                    "eN": en,
                 }
             )
 
-    return results
-
-
-def computeTeNePairs_obsolete(
-    density_diagnostics: list,
-    tempterature_diagnostics: list,
-    pnObs,
-    pnErrObs,
-    min_percentage,
-    logger,
-):
-    def filterPairs(densityd, temperatured, pobs):
-        user = [(td, dd) for td in temperatured for dd in densityd]
-        diags = pn.Diagnostics()
-        # construct all possible diagnostics from the given observation set
-        diags.addDiagsFromObs(pobs)
-        validLines = diags.getDiagLabels()
-        # filter user list based on observation set
-        return [(d[0], d[1]) for d in user if d[0] in validLines and d[1] in validLines]
-
-    if len(filterPairs(density_diagnostics, tempterature_diagnostics, pnObs)) == 0:
-        print("----------------------------------->>>>")
-    db.debug_obs_labels(pnObs)
-
-    tene_slit_dict = []
-    diags = pn.Diagnostics()
-    for pair in filterPairs(density_diagnostics, tempterature_diagnostics, pnObs):
-        st, sn = diags.getCrossTemDen(pair[0], pair[1], obs=pnObs)
-        et, en = diags.getCrossTemDen(pair[0], pair[1], obs=pnErrObs)
-        et, okT = inspectMcErr(et, min_percentage, logger)
-        en, okN = inspectMcErr(en, min_percentage, logger)
-        tene_slit_dict.append(
-            {
-                "tene_pair": (pair[0], pair[1]),
-                "sT": st,
-                "sN": sn,
-                "eT": et,
-                "eN": en,
-            }
-        )
-
-    return tene_slit_dict, not (okT and okN)
-
-
-def err2scalar(err_array, logger):
-    """
-    Define the fucntion to produce a single (i.e. scalar) error value,
-    when we have an array of error values (i.e. from Monte-Carlo
-    simulations.
-    """
-    if np.isnan(err_array).any():
-        logger.warning(
-            "WARNING  array contains nan! {:} for computing error in temperature/density diagnostics".format(
-                err_array
-            )
-        )
-    return np.std(err_array[~np.isnan(err_array)])
-
-
-def computeTeNePairs_obsolete(
-    density_diagnostics: list, tempterature_diagnostics: list, pnObs, pnErrObs, logger
-):
-    def filterPairs(densityd, temperatured, pobs):
-        user = [(td, dd) for td in temperatured for dd in densityd]
-        diags = pn.Diagnostics()
-        # construct all possible diagnostics from the given observation set
-        diags.addDiagsFromObs(pobs)
-        validLines = diags.getDiagLabels()
-        # filter user list based on observation set
-        return [(d[0], d[1]) for d in user if d[0] in validLines and d[1] in validLines]
-
-    includes_nan = False
-    tene_slit_dict = []
-    diags = pn.Diagnostics()
-    for pair in filterPairs(density_diagnostics, tempterature_diagnostics, pnObs):
-        st, sn = diags.getCrossTemDen(pair[0], pair[1], obs=pnObs)
-        et, en = diags.getCrossTemDen(pair[0], pair[1], obs=pnErrObs)
-        if np.isnan(np.array([et, en])).any():
-            logger.warning(
-                f"Nan value(s) encountered while computing Te/Ne diagnostics!"
-            )
-            includes_nan = True
-        tene_slit_dict.append(
-            {
-                "tene_pair": (pair[0], pair[1]),
-                "sT": st,
-                "sN": sn,
-                "eT": et,
-                "eN": en,
-            }
-        )
-
-    return tene_slit_dict, includes_nan
+    return tene_slit_dict, (okT and okN)
 
 
 def printDiagnostics(dict_of_diagnostics, fn, logger):
@@ -366,9 +281,11 @@ def printDiagnostics(dict_of_diagnostics, fn, logger):
                     print(
                         "{:12.6e} {:12.6e} / {:12.6e} {:12.6e} ".format(
                             entry["sT"],
-                            err2scalar(entry["eT"], logger),
+                            # err2scalar(entry["eT"], logger),
+                            entry["eT"],
                             entry["sN"],
-                            err2scalar(entry["eN"], logger),
+                            # err2scalar(entry["eN"], logger),
+                            entry["eN"],
                         ),
                         file=fout,
                         end="",
