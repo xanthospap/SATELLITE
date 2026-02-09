@@ -4,7 +4,7 @@ import math
 import pyneb as pn
 import numpy as np
 from dataclasses import dataclass
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict, Optional, Any
 
 from satellite import satdebug as db
 from satellite import intensity
@@ -131,6 +131,41 @@ def observed_ratio_for_diag(
     return R, Rerr, meta
 
 
+# does exactly the same as observed_ratio_for_diag but for custom diagnostics
+def observed_ratio_for_custom_expr(
+    *,
+    label: str,
+    ion: str,
+    expr: str,
+    idx,
+    tol_A: float,
+    logger=None,
+):
+    num_w, den_w = _waves_from_expr(expr)
+
+    if logger:
+        logger.info(
+            f"Computing CUSTOM diagnostic {label} from {expr}; "
+            f"num={num_w}, den={den_w}"
+        )
+
+    num_I, num_e, num_matches = sum_intensities(idx, ion, num_w, tol_A, logger)
+    den_I, den_e, den_matches = sum_intensities(idx, ion, den_w, tol_A, logger)
+
+    R, Rerr = ratio_and_err(num_I, den_I, num_e, den_e)
+    meta = {
+        "ion": ion,
+        "expr": expr,
+        "num_waves": num_w,
+        "den_waves": den_w,
+        "num_matches": num_matches,
+        "den_matches": den_matches,
+        "num_sum": num_I,
+        "den_sum": den_I,
+    }
+    return R, Rerr, meta
+
+
 def computeTeNePairs(
     density_diagnostics: List[str],
     temperature_diagnostics: List[str],
@@ -147,6 +182,14 @@ def computeTeNePairs(
     - compute observed ratios from your intensity list (no Observation)
     - call getCrossTemDen(value_tem=..., value_den=...) for each pair
     """
+
+    def _normalize_diag_entry(d):
+        # returns (label, ion, expr) where ion/expr may be None for built-ins
+        if isinstance(d, str):
+            return d, None, None
+        if isinstance(d, dict):
+            return d["label"], d["ion"], d["expr"]
+        raise TypeError(f"Unsupported diagnostic entry: {d!r}")
 
     def _inspect_mc_err(arr: np.ndarray) -> Tuple[float, bool]:
         a = np.asarray(arr, dtype=float).ravel()
@@ -166,24 +209,58 @@ def computeTeNePairs(
     # build index
     idx = intensity.build_intensity_index(intensities_payload)
 
+    temp_entries = [_normalize_diag_entry(d) for d in temperature_diagnostics]
+    dens_entries = [_normalize_diag_entry(d) for d in density_diagnostics]
+
+    # keep the original ordering, but unique by label
+    def _unique_by_label(entries):
+        seen = set()
+        out = []
+        for label, ion, expr in entries:
+            if label not in seen:
+                out.append((label, ion, expr))
+                seen.add(label)
+        return out
+
+    all_entries = _unique_by_label(temp_entries + dens_entries)
+
     # collect/combine user-defined diagnostics
+    # diags = pn.Diagnostics()
+    # all_diags = list(dict.fromkeys(temperature_diagnostics + density_diagnostics))
+    # for d in all_diags:
+    #    diags.addDiag(d)  # built-in labels like [SII], [NII], etc.
     diags = pn.Diagnostics()
-    all_diags = list(dict.fromkeys(temperature_diagnostics + density_diagnostics))
-    for d in all_diags:
-        diags.addDiag(d)  # built-in labels like [SII], [NII], etc.
+    for label, ion, expr in all_entries:
+        if ion is None:
+            diags.addDiag(label)  # built-in
+        else:
+            # Option A (often works): inject into pn.diags_dict, then add by label
+            pn.diags_dict[label] = (ion, expr, None)
+            diags.addDiag(label)
 
     # compute ratios once
-    ratio_info: Dict[str, Dict[str, Any]] = {}
-    for d in all_diags:
-        R, Rerr, meta = observed_ratio_for_diag(d, idx, tol_A, logger)
-        ratio_info[d] = {"R": float(R), "Rerr": float(Rerr), **meta}
+    # ratio_info: Dict[str, Dict[str, Any]] = {}
+    # for d in all_diags:
+    #    R, Rerr, meta = observed_ratio_for_diag(d, idx, tol_A, logger)
+    #    ratio_info[d] = {"R": float(R), "Rerr": float(Rerr), **meta}
+    ratio_info = {}
+    for label, ion, expr in all_entries:
+        if ion is None:
+            R, Rerr, meta = observed_ratio_for_diag(label, idx, tol_A, logger)
+        else:
+            R, Rerr, meta = observed_ratio_for_custom_expr(
+                label=label, ion=ion, expr=expr, idx=idx, tol_A=tol_A, logger=logger
+            )
+        ratio_info[label] = {"R": float(R), "Rerr": float(Rerr), **meta}
 
     # to be returned ...
     tene_slit_dict: List[Dict[str, Any]] = []
 
+    temp_labels = [x[0] for x in temp_entries]
+    dens_labels = [x[0] for x in dens_entries]
     # solve Te/Ne for every T x n combination
-    for t in temperature_diagnostics:
-        for n in density_diagnostics:
+    for t in temp_labels:
+        for n in dens_labels:
             Rt = ratio_info[t]["R"]
             Rn = ratio_info[n]["R"]
             Rt_err = ratio_info[t]["Rerr"]

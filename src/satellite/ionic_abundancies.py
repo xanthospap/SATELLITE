@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, Optional, List
 import numpy as np
 import pyneb as pn
 

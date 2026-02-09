@@ -1,7 +1,7 @@
 import sys
 import pyneb as pn
 import numpy as np
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Any
 from typing import Optional
 
 from satellite import astroflux
