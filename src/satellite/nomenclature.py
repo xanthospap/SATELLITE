@@ -155,6 +155,47 @@ def try_create_atom_with_chianti(element: str, spec: int, logger=None):
         return None
 
 
+def chianti_closest_wavelength_A(element: str, spec: int, target_ang: float) -> float:
+    from ChiantiPy.core import ion as ChiantiIon
+
+    """
+    Return closest transition wavelength (Å) from CHIANTI wgfa table.
+    Requires XUVTOP to be set (CHIANTI DB root).
+    """
+    ion_name = f"{element.lower()}_{spec}"
+
+    # T, Ne just to satisfy constructor; irrelevant for wgfa wavelengths
+    ch = ChiantiIon(ion_name, temperature=1e4, eDensity=1e2)
+
+    # Ensure radiative transitions table is loaded
+    if not hasattr(ch, "Wgfa") or ch.Wgfa is None:
+        ch.wgfaRead()
+
+    waves = np.asarray(ch.Wgfa.get("wvl", []), dtype=float)
+    waves = waves[np.isfinite(waves)]
+    waves = waves[waves > 0.0]
+    if waves.size == 0:
+        raise RuntimeError(f"CHIANTI: no wavelengths found for {ion}")
+
+    i = int(np.argmin(np.abs(waves - target_ang)))
+    return float(waves[i])
+
+
+def pyneb_atom_has_lines(atom_obj) -> bool:
+    """
+    True if Atom looks usable (has a non-empty numeric lineList).
+    This catches the 'data not available but Atom still created' situation.
+    """
+    try:
+        ll = getattr(atom_obj, "lineList", None)
+        if ll is None:
+            return False
+        arr = np.asarray(ll, dtype=float)
+        return arr.ndim == 1 and arr.size > 0 and np.isfinite(arr).all()
+    except Exception:
+        return False
+
+
 # ---------- main function ----------
 
 
@@ -192,6 +233,7 @@ def best_pyneb_line(
 
     # Other ions: try Atom first (this matches printTransition behavior)
     atom_obj = None
+
     # If not using chianti, this is the correct branch
     #
     # try:
@@ -202,28 +244,38 @@ def best_pyneb_line(
     #
     # if using chianti though ...
     # 1. Try standard PyNeb Atom
-    try:
-        atom_obj = pn.Atom(element, spec)
-    except Exception:
-        # 2. Try loading PyNeb data files explicitly
-        try_load_any_data_files(ion_key, logger=logger)
-
+    def _try_pyneb_atom() -> bool:
+        nonlocal atom_obj
         try:
             atom_obj = pn.Atom(element, spec)
-
+            return pyneb_atom_has_lines(atom_obj)
         except Exception:
+            return False
 
-            if not has_valid_xuvtop():
-                raise RuntimeError(f"Could not construct Atom for {element}{spec} ")
+    # 1) PyNeb Atom
+    ok = _try_pyneb_atom()
 
-            # 3. FINAL fallback: CHIANTI
-            atom_obj = try_create_atom_with_chianti(element, spec, logger=logger)
+    # 2) Try loading PyNeb files and retry
+    if not ok:
+        try_load_any_data_files(ion_key, logger=logger)
+        ok = _try_pyneb_atom()
 
-            if atom_obj is None:
-                raise RuntimeError(
-                    f"Could not construct Atom for {element}{spec} "
-                    f"from PyNeb or CHIANTI"
-                )
+    # 3) CHIANTI fallback (only if XUVTOP is set/valid)
+    if not ok:
+        if not has_valid_xuvtop():
+            raise RuntimeError(
+                f"Could not construct usable Atom for {element}{spec} (no PyNeb data; no XUVTOP)."
+            )
+
+        # simplest: use ChiantiPy to get closest wavelength and return a PyNeb-style label
+        best_ang = chianti_closest_wavelength_A(element, spec, target_ang)
+        frag = format_ang_label(best_ang)
+        if logger:
+            logger.info(
+                f"Using CHIANTI fallback for {element}{spec}: closest {best_ang}A"
+            )
+
+        return f"{ion_key}_{frag}", best_ang
 
     # Prefer getTransition if available; otherwise use lineList directly
     closest_ang = None

@@ -92,6 +92,8 @@ def prepareChianti(dir: str, logger=None) -> str:
     # You can uncomment if you want it to fail fast when ChiantiPy/PyNeb can't see it.
     #
     # import pyneb as pn
-    # _ = pn.utils.pn_chianti.Chianti_getA("o_3")
+    # import ChiantiPy
+    #
+    # _ = pn.utils.pn_chianti.Chianti_getA("ni_2")
 
     return os.environ["XUVTOP"]

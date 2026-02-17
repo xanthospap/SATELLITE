@@ -216,6 +216,7 @@ if __name__ == "__main__":
     # prepare for Chianti db if needed
     if args.chianti_path != "":
         xuvtop = pchianti.prepareChianti(args.chianti_path, logger)
+        os.environ["XUVTOP"] = xuvtop
 
     # try:
     if cfgio.doSpecificSlitAnalysis(config):
