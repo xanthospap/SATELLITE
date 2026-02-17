@@ -49,7 +49,9 @@ def matched_line_intensity_for_entry(
     Returns (pn_element_label, intensity, sigma_intensity) for this fit entry.
     """
     ion = ion_key_from_entry(entry)
-    target_A = float(entry["atomic"])  # your line wavelength (can be float)
+    # target_A = float(entry["atomic"])  # your line wavelength (can be float)
+    # (prefer the canonical PyNeb line wavelength)
+    target_A = float(entry.get("pn_line", entry["atomic"]))
 
     row = si.match_line(idx, ion, target_A, tol_A, logger)  # <-- your existing function
 
@@ -83,6 +85,7 @@ def get_atom_model(dct_entry, logger=None):
         if logger:
             logger.error(f"Invalid ref_type for entry: {dct_entry}")
         raise RuntimeError(f"ERROR Invalid ref_type for entry: {dct_entry}")
+
     element = dct_entry["element"]
     ion = sr.roman2int(dct_entry["spectrum"])
     if ref_type.upper() == "CEL":
@@ -93,7 +96,25 @@ def get_atom_model(dct_entry, logger=None):
         logger.debug(
             f'Creating (default) atom from entry {element} {ion} (or {element}{dct_entry["spectrum"]}) for ionic abundancies.'
         )
-        return pn.Atom(element, ion)
+
+        # return pn.Atom(element, ion)
+        # Validate that PyNeb actually has usable atomic data
+        atom = pn.Atom(element, ion)
+        try:
+            w = getattr(atom, "wave_Ang", None)
+            if w is None or not hasattr(w, "shape"):
+                if logger:
+                    logger.warning(
+                        f"Skipping {element}{ion}: no usable PyNeb atomic data."
+                    )
+                return None
+        except Exception:
+            if logger:
+                logger.warning(f"Skipping {element}{ion}: invalid PyNeb atomic model.")
+            return None
+
+        return atom
+
     else:
         logger.debug(
             f'Creating recombination atom from entry {element} {ion} (or {element}{dct_entry["spectrum"]}) for ionic abundancies. pn.RecAtom({element}, {ion})'
@@ -174,13 +195,13 @@ def computeIonicAbundancies(
             return []
 
         pn_atom = get_atom_model(entry, logger)
-        # pn_element, _ = sn.objectIntensityPyNebCode(
-        #    entry["element"], entry["spectrum"], entry["atomic"], logger
-        # )
-        # logger.debug(
-        #    f'computeIonicAbundancies: entry {entry["element"]}{entry["spectrum"]}{entry["atomic"]} transformed to {pn_element}'
-        # )
-        # Use your same matching strategy as diagnostics, but per-entry
+        if pn_atom is None:
+            logger.warning(
+                f"Skipping abundance for {entry['element']}{entry['spectrum']}_{entry['atomic']} "
+                f"(no usable atomic model)"
+            )
+            continue
+
         try:
             pn_element, I_c, sigma_I = matched_line_intensity_for_entry(
                 idx, entry, tol_A, logger

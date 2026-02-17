@@ -159,7 +159,7 @@ def specific_slit_analysis(
 
     # clear-up transmittion lines using PyNeb
     fitsd = getIonTransmittionLines(fitsd, logger)
-    print(f'Number of fits = {len(fitsd)}')
+    print(f"Number of fits = {len(fitsd)}")
 
     # A file to write out corners
     fcrn = open(corners_out, "w")
@@ -231,27 +231,6 @@ def specific_slit_analysis(
         while (
             nan_diagnostics and times_nan_encountered < MAX_NAN_IN_DIAGNOSTICS_ALLOWED
         ):
-            """
-            eobs = pn.Observation()
-            eobs.readData(
-                "test.dat", fileFormat="lines_in_rows_err_cols", errIsRelative=False
-            )
-            eobs.addMonteCarloObs(N=monte_carlo_fake_obs)
-            eobs.def_EBV(label1="H1r_6563A", label2="H1r_4861A", r_theo=2.85)
-            eobs.extinction.law = ext_law
-            eobs.correctData(normWave=4861.0)
-
-            RC = pn.RedCorr(E_BV=sobs.extinction.E_BV[0], R_V=pn_rv, law=ext_law)
-
-            # Use Monte-Carlo simulations for E(B-V) and c(Hb) undertainties
-            # 1. factor to convert E(B–V) to c(Hβ)
-            RC_test = pn.RedCorr(E_BV=1.0, R_V=pn_rv, law=ext_law)
-            f = RC_test.cHbeta
-            # 2. Get uncertainty on E(B–V) from Monte Carlo results
-            ebv_err = eobs.extinction.E_BV.std()
-            # 3. Convert to c(Hβ) uncertainty
-            chbeta_err = f * ebv_err
-            """
             # MC fractional uncertainties on corrected intensities + EBV uncertainty
             rel_sigma, ebv_err = sc.monte_carlo_errors(
                 rows, ext_law=ext_law, R_V=pn_rv, N=monte_carlo_fake_obs, seed=0
