@@ -70,7 +70,26 @@ def format_ang_label(wang: float) -> str:
 _STATUS_PREFIX_RE = re.compile(r"^[*XDD]\s*", flags=re.IGNORECASE)
 
 
-def try_load_any_data_files(ion: str, logger=None) -> bool:
+def pick_default(candidates):
+    # prefer starred/default then name
+    return sorted(candidates, key=lambda t: (not t[0], t[1]))[0][1]
+
+
+def pick_chianti(candidates):
+    chi = [c for c in candidates if c[1].lower().endswith(".chianti")]
+    if not chi:
+        return None
+    return sorted(chi, key=lambda t: (not t[0], t[1]))[0][1]
+
+
+def try_load_any_data_files(
+    ion: str, logger=None, *, allow_chianti: bool = False
+) -> bool:
+    """
+    Load one file per bucket (atom/coll/rec).
+    If allow_chianti=False: never choose *.chianti files.
+    If allow_chianti=True: prefer *.chianti files when present.
+    """
     try:
         raw = pn.atomicData.getAllAvailableFiles(ion) or []
     except Exception:
@@ -82,11 +101,11 @@ def try_load_any_data_files(ion: str, logger=None) -> bool:
         s = _STATUS_PREFIX_RE.sub("", s).strip()
         return is_default, s
 
-    def kind(fname: str) -> Optional[str]:
+    def kind(fname: str):
         f = fname.lower()
-        if "_atom_" in f:
+        if "_atom_" in f or f.endswith("_atom.chianti") or "_atom." in f:
             return "atom"
-        if "_coll_" in f:
+        if "_coll_" in f or f.endswith("_coll.chianti") or "_coll." in f:
             return "coll"
         if "_rec_" in f or f.endswith(".func"):
             return "rec"
@@ -99,21 +118,36 @@ def try_load_any_data_files(ion: str, logger=None) -> bool:
         if k and fn:
             buckets[k].append((is_def, fn))
 
-    loaded = False
+    loaded_any = False
     for k in ("atom", "coll", "rec"):
         if not buckets[k]:
             continue
-        # prefer starred/default file
-        fn = sorted(buckets[k], key=lambda t: (not t[0], t[1]))[0][1]
+
+        fn = None
+        if allow_chianti:
+            fn = pick_chianti(buckets[k])
+
+        if fn is None:
+            # default selection, but avoid *.chianti when not allowed
+            pool = (
+                buckets[k]
+                if allow_chianti
+                else [c for c in buckets[k] if not c[1].lower().endswith(".chianti")]
+            )
+            if not pool:
+                continue
+            fn = pick_default(pool)
+
         try:
             pn.atomicData.setDataFile(fn)
-            loaded = True
+            loaded_any = True
             if logger:
                 logger.info(f"Loaded {k} data for {ion}: {fn}")
         except Exception as ex:
             if logger:
                 logger.warning(f"Failed loading {k} for {ion} from {fn}: {ex}")
-    return loaded
+
+    return loaded_any
 
 
 # ---------- chianti stuff ----------
@@ -156,7 +190,7 @@ def try_create_atom_with_chianti(element: str, spec: int, logger=None):
 
 
 def chianti_closest_wavelength_A(element: str, spec: int, target_ang: float) -> float:
-    from ChiantiPy.core import ion as ChiantiIon
+    from ChiantiPy.core.ion import ion as ChiantiIon
 
     """
     Return closest transition wavelength (Å) from CHIANTI wgfa table.
@@ -197,6 +231,37 @@ def pyneb_atom_has_lines(atom_obj) -> bool:
 
 
 # ---------- main function ----------
+
+
+def ensure_pyneb_atom(element: str, spec: int, ion_key: str, logger=None):
+    # 1) Try plain PyNeb Atom
+    try:
+        atom = pn.Atom(element, spec)
+        if pyneb_atom_has_lines(atom):
+            return atom
+    except Exception:
+        pass
+
+    # 2) Try loading NON-chianti files first
+    try_load_any_data_files(ion_key, logger=logger, allow_chianti=False)
+    try:
+        atom = pn.Atom(element, spec)
+        if pyneb_atom_has_lines(atom):
+            return atom
+    except Exception:
+        pass
+
+    # 3) Only now try CHIANTI (if configured)
+    if has_valid_xuvtop():
+        try_load_any_data_files(ion_key, logger=logger, allow_chianti=True)
+        try:
+            atom = pn.Atom(element, spec)
+            if pyneb_atom_has_lines(atom):
+                return atom
+        except Exception:
+            pass
+
+    return None
 
 
 def best_pyneb_line(
@@ -242,40 +307,13 @@ def best_pyneb_line(
     #    try_load_any_data_files(ion_key, logger=logger)
     #    atom_obj = pn.Atom(element, spec)
     #
-    # if using chianti though ...
-    # 1. Try standard PyNeb Atom
-    def _try_pyneb_atom() -> bool:
-        nonlocal atom_obj
-        try:
-            atom_obj = pn.Atom(element, spec)
-            return pyneb_atom_has_lines(atom_obj)
-        except Exception:
-            return False
-
-    # 1) PyNeb Atom
-    ok = _try_pyneb_atom()
-
-    # 2) Try loading PyNeb files and retry
-    if not ok:
-        try_load_any_data_files(ion_key, logger=logger)
-        ok = _try_pyneb_atom()
-
-    # 3) CHIANTI fallback (only if XUVTOP is set/valid)
-    if not ok:
-        if not has_valid_xuvtop():
-            raise RuntimeError(
-                f"Could not construct usable Atom for {element}{spec} (no PyNeb data; no XUVTOP)."
-            )
-
-        # simplest: use ChiantiPy to get closest wavelength and return a PyNeb-style label
-        best_ang = chianti_closest_wavelength_A(element, spec, target_ang)
-        frag = format_ang_label(best_ang)
-        if logger:
-            logger.info(
-                f"Using CHIANTI fallback for {element}{spec}: closest {best_ang}A"
-            )
-
-        return f"{ion_key}_{frag}", best_ang
+    atom_obj = ensure_pyneb_atom(element, spec, ion_key, logger)
+    if atom_obj is None:
+        raise RuntimeError(
+            f"Could not construct Atom for {ion_key}. "
+            f"Try setting pn.atomicData.setDataFileDict('PYNEB_23_01') "
+            f"and ensure CHIANTI *.chianti files are discoverable."
+        )
 
     # Prefer getTransition if available; otherwise use lineList directly
     closest_ang = None

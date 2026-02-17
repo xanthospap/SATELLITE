@@ -1,22 +1,17 @@
 #!/usr/bin/env python
 
-from satellite import version
-from satellite import cfgio
-from satellite import roman
-from satellite import pchianti
-from satellite import specific_slit
-from satellite import angular_slit
-from satellite import radial_slit
-from satellite import satlogger
-from satellite import plotters
-
+## Warning
+## Do not import anything here that directly or indirectly imports pyneb
+## Any (direct or indirect) importing of pyneb must happen after exporting 
+## XUVTOP (if we ever do)
 import argparse
 import os
 import sys
 import logging
+from satellite import satlogger
+from satellite import pchianti
 
 satellite_version = "2.r1"
-
 
 class myFormatter(
     argparse.ArgumentDefaultsHelpFormatter, argparse.RawTextHelpFormatter
@@ -200,6 +195,25 @@ if __name__ == "__main__":
     # setup a logger
     logger = satlogger.setup_logger("specific_slit", logging.DEBUG, args.log_file)
 
+    # prepare for Chianti db if needed
+    if args.chianti_path != "":
+        xuvtop = pchianti.prepareChianti(args.chianti_path, logger)
+        os.environ["XUVTOP"] = xuvtop
+    
+    # load atomic data set
+    import pyneb as pn
+    pn.atomicData.setDataFileDict(args.pn_atomic_data)
+    logger.info(f"PyNeb atomic data set: {args.pn_atomic_data}")
+
+    # Safe to import pyneb stuff here ...
+    from satellite import version
+    from satellite import cfgio
+    from satellite import roman
+    from satellite import specific_slit
+    from satellite import angular_slit
+    from satellite import radial_slit
+    from satellite import plotters
+    
     # parse the config file
     config = cfgio.parseConfigInout(args.config)
 
@@ -212,11 +226,6 @@ if __name__ == "__main__":
         logger.warning("Missing FITS files: {:}".format(err))
         if args.missing_fits_is_error:
             sys.exit(1)
-
-    # prepare for Chianti db if needed
-    if args.chianti_path != "":
-        xuvtop = pchianti.prepareChianti(args.chianti_path, logger)
-        os.environ["XUVTOP"] = xuvtop
 
     # try:
     if cfgio.doSpecificSlitAnalysis(config):
