@@ -3,6 +3,7 @@
 from satellite import version
 from satellite import cfgio
 from satellite import roman
+from satellite import pchianti
 from satellite import specific_slit
 from satellite import angular_slit
 from satellite import radial_slit
@@ -179,6 +180,15 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--chianti",
+    metavar="CHIANTI",
+    dest="chianti_path",
+    default="",
+    required=False,
+    help="Path to Chianti database. If the database is not found, it will be downloaded and installed at the specified path. If given an empty string (default) Chianti db will not be used.",
+)
+
+parser.add_argument(
     "--no-plots", action="store_true", dest="no_plots", help="Do no produce plotts."
 )
 
@@ -203,7 +213,11 @@ if __name__ == "__main__":
         if args.missing_fits_is_error:
             sys.exit(1)
 
-        # try:
+    # prepare for Chianti db if needed
+    if args.chianti_path != "":
+        xuvtop = pchianti.prepareChianti(args.chianti_path, logger)
+
+    # try:
     if cfgio.doSpecificSlitAnalysis(config):
         # Specific Slit Analysis
         specific_slit.specific_slit_analysis(

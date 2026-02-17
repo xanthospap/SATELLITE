@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import re
+import re, os
 from typing import Optional, Tuple, Union
+from pathlib import Path
 
 import numpy as np
 import pyneb as pn
@@ -32,7 +33,7 @@ def wave_to_angstrom(w: WaveLike) -> float:
     return float(m2.group(1))
 
 
-def _label_to_angstrom(lbl: str) -> Optional[float]:
+def label_to_angstrom(lbl: str) -> Optional[float]:
     s = lbl.strip().replace("Å", "A")
     m = re.search(r"(\d+(?:\.\d+)?)(A|m)", s)
     if not m:
@@ -41,11 +42,11 @@ def _label_to_angstrom(lbl: str) -> Optional[float]:
     return val * (1e4 if m.group(2) == "m" else 1.0)
 
 
-def _closest_from_labels(ion_label: str, target_ang: float) -> Tuple[str, float]:
+def closest_from_labels(ion_label: str, target_ang: float) -> Tuple[str, float]:
     labels = pn.LINE_LABEL_LIST[ion_label]
     best_lbl, best_ang, best_diff = None, None, float("inf")
     for lab in labels:
-        ang = _label_to_angstrom(lab)
+        ang = label_to_angstrom(lab)
         if ang is None:
             continue
         diff = abs(ang - target_ang)
@@ -56,7 +57,7 @@ def _closest_from_labels(ion_label: str, target_ang: float) -> Tuple[str, float]
     return best_lbl, best_ang
 
 
-def _format_ang_label(wang: float) -> str:
+def format_ang_label(wang: float) -> str:
     # mimic the “one decimal when needed” feel you see in printTransition()
     if abs(wang - round(wang)) < 1e-6:
         return f"{int(round(wang))}A"
@@ -69,7 +70,7 @@ def _format_ang_label(wang: float) -> str:
 _STATUS_PREFIX_RE = re.compile(r"^[*XDD]\s*", flags=re.IGNORECASE)
 
 
-def _try_load_any_data_files(ion: str, logger=None) -> bool:
+def try_load_any_data_files(ion: str, logger=None) -> bool:
     try:
         raw = pn.atomicData.getAllAvailableFiles(ion) or []
     except Exception:
@@ -115,6 +116,45 @@ def _try_load_any_data_files(ion: str, logger=None) -> bool:
     return loaded
 
 
+# ---------- chianti stuff ----------
+def has_valid_xuvtop() -> bool:
+    """
+    True iff XUVTOP is set and looks like a CHIANTI database root.
+    (CHIANTI root typically contains 'masterlist' and 'VERSION'.)
+    """
+    x = os.environ.get("XUVTOP")
+    if not x:
+        return False
+    p = Path(x).expanduser()
+    return (
+        p.exists()
+        and p.is_dir()
+        and (p / "masterlist").exists()
+        and (p / "VERSION").exists()
+    )
+
+
+def try_create_atom_with_chianti(element: str, spec: int, logger=None):
+    """
+    Try to construct a CHIANTI-backed Atom.
+    Returns ChiantiAtom instance or None.
+    """
+    try:
+        import pyneb as pn
+
+        chianti_atom = pn.utils.pn_chianti.ChiantiAtom(element, spec)
+
+        if logger:
+            logger.info(f"Loaded {element}{spec} from CHIANTI database")
+
+        return chianti_atom
+
+    except Exception as ex:
+        if logger:
+            logger.warning(f"Failed to load {element}{spec} from CHIANTI: {ex}")
+        return None
+
+
 # ---------- main function ----------
 
 
@@ -147,16 +187,43 @@ def best_pyneb_line(
 
     # H/He: use LINE_LABEL_LIST (recombination labels)
     if element in {"H", "He"} and ion_label in pn.LINE_LABEL_LIST:
-        frag, best_ang = _closest_from_labels(ion_label, target_ang)
+        frag, best_ang = closest_from_labels(ion_label, target_ang)
         return f"{ion_label}_{frag}", best_ang
 
     # Other ions: try Atom first (this matches printTransition behavior)
     atom_obj = None
+    # If not using chianti, this is the correct branch
+    #
+    # try:
+    #    atom_obj = pn.Atom(element, spec)
+    # except Exception:
+    #    try_load_any_data_files(ion_key, logger=logger)
+    #    atom_obj = pn.Atom(element, spec)
+    #
+    # if using chianti though ...
+    # 1. Try standard PyNeb Atom
     try:
         atom_obj = pn.Atom(element, spec)
     except Exception:
-        _try_load_any_data_files(ion_key, logger=logger)
-        atom_obj = pn.Atom(element, spec)
+        # 2. Try loading PyNeb data files explicitly
+        try_load_any_data_files(ion_key, logger=logger)
+
+        try:
+            atom_obj = pn.Atom(element, spec)
+
+        except Exception:
+
+            if not has_valid_xuvtop():
+                raise RuntimeError(f"Could not construct Atom for {element}{spec} ")
+
+            # 3. FINAL fallback: CHIANTI
+            atom_obj = try_create_atom_with_chianti(element, spec, logger=logger)
+
+            if atom_obj is None:
+                raise RuntimeError(
+                    f"Could not construct Atom for {element}{spec} "
+                    f"from PyNeb or CHIANTI"
+                )
 
     # Prefer getTransition if available; otherwise use lineList directly
     closest_ang = None
@@ -184,7 +251,7 @@ def best_pyneb_line(
         i = int(np.argmin(np.abs(waves - target_ang)))
         closest_ang = float(waves[i])
 
-    frag = _format_ang_label(closest_ang)
+    frag = format_ang_label(closest_ang)
 
     logger.info(
         f"Best fit for line {element}{spec}_{target_ang} in pyneb is {ion_key}_{frag}"

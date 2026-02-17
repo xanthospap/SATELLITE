@@ -101,20 +101,38 @@ def get_atom_model(dct_entry, logger=None):
         return pn.RecAtom(element, ion)
 
 
+_PAIR_RE = re.compile(
+    r"""^
+    (?:                                   # option A: [Ion] expr [Ion] expr
+        \[([A-Za-z0-9]+)\]\s*([0-9A-Za-z+]+(?:/[0-9A-Za-z+]+)?)\s+
+        \[([A-Za-z0-9]+)\]\s*([0-9A-Za-z+]+(?:/[0-9A-Za-z+]+)?)
+    |
+        (\S+)\s+(\S+)                      # option B: token1 token2
+    )
+    $""",
+    re.VERBOSE,
+)
+
+
 def refTenNe2PyNebPair(ref_tene):
     """
     Example:
         ref_tene="[SIII] 6312/9069 [ClIII] 5538/5518"
+        ref_tene="string1 strings3"
     Return:
         "[SIII] 6312/9069", "[ClIII] 5538/5518"
+        "string1", "string2"
     """
-    match = re.match(
-        r"\[([A-Za-z0-9]*)\]\s*([0-9a-zA-Z\+]*[/0-9a-zA-Z\+]*)\s*\[([A-Za-z0-9]*)\]\s*([0-9a-zA-Z\+]*[/0-9a-zA-Z\+]*)",
-        ref_tene,
-    )
-    return "[{:}] {:}".format(match.group(1), match.group(2)), "[{:}] {:}".format(
-        match.group(3), match.group(4)
-    )
+    m = _PAIR_RE.match(ref_tene.strip())
+    if not m:
+        raise ValueError(f"Unrecognized ref_tene format: {ref_tene!r}")
+
+    if m.group(1) is not None:
+        # matched the [Ion] expr [Ion] expr form
+        return f"[{m.group(1)}] {m.group(2)}", f"[{m.group(3)}] {m.group(4)}"
+    else:
+        # matched the generic "token token" form
+        return m.group(5), m.group(6)
 
 
 def computeIonicAbundancies(

@@ -32,7 +32,7 @@ def getFitsSlit(fits_fn: str, slit: dict, logger=None):
     )
 
 
-def getSlitCorners(fits_fn: str, slit: dict, logger=None):
+def getSlitCorners(slit: dict, logger=None):
     row0 = slit["y"] - 1
     col0 = slit["x"] - 1
     width = slit["w"]
@@ -159,6 +159,7 @@ def specific_slit_analysis(
 
     # clear-up transmittion lines using PyNeb
     fitsd = getIonTransmittionLines(fitsd, logger)
+    print(f'Number of fits = {len(fitsd)}')
 
     # A file to write out corners
     fcrn = open(corners_out, "w")
@@ -184,7 +185,7 @@ def specific_slit_analysis(
             cpd[idx]["eslit_sum"] = sm
 
         # Get corners (rotated-frame & original-frame)
-        corn_rot, corn_orig = getSlitCorners(fits["fns"], slit, None)
+        corn_rot, corn_orig = getSlitCorners(slit, None)
         for name, p in zip(["TL", "TR", "BR", "BL"], corn_orig):
             print(f"  {slit_idx} {name} {p[0]:.3f}, {p[1]:.3f}", file=fcrn)
 
