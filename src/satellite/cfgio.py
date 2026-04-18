@@ -120,6 +120,12 @@ def doAngularSlitAnalysis(dct: dict):
 def doRadialSlitAnalysis(dct: dict):
     return not dct["analysis"]["radial_slit_analysis"]["skip"]
 
+def do2DAnalysis(dct: dict):
+    analysis = dct.get("analysis", {})
+    block = analysis.get("2d_analysis")
+    if block is None:
+        return False
+    return not _cfg_bool(block.get("skip", True), default=True)
 
 def configSpecificSlitAnalysis(dct: dict):
     d = dct["analysis"]["specific_slit_analysis"]
@@ -173,6 +179,44 @@ def configAngularSlitAnalysis(dct: dict):
         )
     return slits
 
+def _cfg_bool(value, default=False):
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _cfg_int_or_none(value, default=None):
+    if value is None:
+        return default
+    if isinstance(value, str) and value.strip().lower() in {"", "none", "null"}:
+        return default
+    return int(value)
+
+def config2DAnalysis(dct: dict):
+    analysis = dct.get("analysis", {})
+    block = analysis.get("2d_analysis")
+    if block is None:
+        return None
+    if _cfg_bool(block.get("skip", True), default=True):
+        return None
+    return {
+        "jobs": _cfg_int_or_none(block.get("jobs", 1), default=1),
+        "row_start": _cfg_int_or_none(block.get("row_start", 0), default=0),
+        "row_end": _cfg_int_or_none(block.get("row_end", None), default=None),
+        "col_start": _cfg_int_or_none(block.get("col_start", 0), default=0),
+        "col_end": _cfg_int_or_none(block.get("col_end", None), default=None),
+        "row_step": _cfg_int_or_none(block.get("row_step", 1), default=1),
+        "col_step": _cfg_int_or_none(block.get("col_step", 1), default=1),
+        "require_positive_reference": _cfg_bool(
+            block.get("require_positive_reference", False), default=False
+        ),
+        "keep_chunks": _cfg_bool(block.get("keep_chunks", False), default=False),
+        "chunk_dir": block.get("chunk_dir", None),
+    }
 
 def findFitsFilename(fits_dct, suffix, data_dir, logger=None):
     if suffix.startswith("."):
