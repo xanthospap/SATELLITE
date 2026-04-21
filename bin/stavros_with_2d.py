@@ -2,7 +2,7 @@
 
 ## Warning
 ## Do not import anything here that directly or indirectly imports pyneb
-## Any (direct or indirect) importing of pyneb must happen after exporting 
+## Any (direct or indirect) importing of pyneb must happen after exporting
 ## XUVTOP (if we ever do)
 import argparse
 import os
@@ -12,6 +12,7 @@ from satellite import satlogger
 from satellite import pchianti
 
 satellite_version = "2.r1"
+
 
 class myFormatter(
     argparse.ArgumentDefaultsHelpFormatter, argparse.RawTextHelpFormatter
@@ -184,6 +185,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--2d-no-errors",
+    action="store_true",
+    dest="two_d_no_errors",
+    help="For 2-D analysis only: disable Monte Carlo/error propagation and use central values only. This is much faster, but all reported uncertainties become zero.",
+)
+
+parser.add_argument(
     "--no-plots", action="store_true", dest="no_plots", help="Do no produce plotts."
 )
 
@@ -199,9 +207,10 @@ if __name__ == "__main__":
     if args.chianti_path != "":
         xuvtop = pchianti.prepareChianti(args.chianti_path, logger)
         os.environ["XUVTOP"] = xuvtop
-    
+
     # load atomic data set
     import pyneb as pn
+
     pn.atomicData.setDataFileDict(args.pn_atomic_data)
     logger.info(f"PyNeb atomic data set: {args.pn_atomic_data}")
 
@@ -214,7 +223,7 @@ if __name__ == "__main__":
     from satellite import radial_slit
     from satellite import analysis2d
     from satellite import plotters
-    
+
     # parse the config file
     config = cfgio.parseConfigInout(args.config)
 
@@ -300,9 +309,15 @@ if __name__ == "__main__":
 
     if cfgio.do2DAnalysis(config):
         # 2-D Pixel Analysis
-        analysis2d.analysis2d(
+        two_d_cfg = cfgio.config2DAnalysis(config)
+
+        if args.two_d_no_errors and two_d_cfg is not None:
+            two_d_cfg = dict(two_d_cfg)
+            two_d_cfg["disable_errors"] = True
+
+        two_d_chunk_dir = analysis2d.analysis2d(
             fits_info,
-            cfgio.config2DAnalysis(config),
+            two_d_cfg,
             cfgio.configElementRatiosList(config),
             cfgio.configDensityDiagnostics(config),
             cfgio.configTemperatureDiagnostics(config),
@@ -321,13 +336,17 @@ if __name__ == "__main__":
             "failed_pixels.dat",
             logger,
         )
+
+        if two_d_chunk_dir is not None:
+            print("Compiling 2-D plots ...")
+            analysis2d.plot_results(two_d_chunk_dir, logger)
     # except Exception as e:
     #    logger.error(f"Analysis failed! Error was: {e}")
     #    print(f"Analysis failed! Error was: {e}")
     #    sys.exit(9)
 
     # if needed draw the plots ...
-    if not args.no_plots:
+    if not args.no_plots and not cfgio.do2DAnalysis(config):
         print("Compiling plots ...")
         plotters.plotLineAbundancies(
             args.abundancies_out, "line_abundancies.pdf", args.barplot

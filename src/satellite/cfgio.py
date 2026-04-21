@@ -216,6 +216,8 @@ def config2DAnalysis(dct: dict):
         ),
         "keep_chunks": _cfg_bool(block.get("keep_chunks", False), default=False),
         "chunk_dir": block.get("chunk_dir", None),
+        "plot_dir": block.get("plot_dir", None),
+        "disable_errors": _cfg_bool(block.get("disable_errors", False), default=False),
     }
 
 def findFitsFilename(fits_dct, suffix, data_dir, logger=None):
