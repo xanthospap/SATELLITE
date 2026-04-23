@@ -246,7 +246,7 @@ def findFitsFilename(fits_dct, suffix, data_dir, logger=None):
                 matches.append(path)
         if len(matches) > 1:
             logger.error(
-                f"More than one filenames in {data_dir} matching entry {fits_dct["element"]}{fits_dct["spectrum"]}_{fits_dct["atomic"]}"
+                f"More than one filenames in {data_dir} matching entry {fits_dct['element']}{fits_dct['spectrum']}_{fits_dct['atomic']}"
             )
             return fnames
         if len(matches) == 1:
@@ -269,7 +269,7 @@ def findFitsFilename(fits_dct, suffix, data_dir, logger=None):
                 matches.append(path)
         if len(matches) > 1:
             logger.error(
-                f"More than one filenames in {data_dir} matching entry {fits_dct["element"]}{fits_dct["spectrum"]}_{fits_dct["atomic"]}"
+                f"More than one filenames in {data_dir} matching entry {fits_dct['element']}{fits_dct['spectrum']}_{fits_dct['atomic']}"
             )
             return fnames
         if len(matches) == 1:
@@ -288,7 +288,7 @@ def checkInputFits(fitsd: list, logger=None):
         if fns is None or fne is None:
             if logger:
                 logger.error(
-                    f"Failed finding a matching fits filename for {fits["element"]}{fits["spectrum"]}_{fits["atomic"]}"
+                    f"Failed finding a matching fits filename for {fits['element']}{fits['spectrum']}_{fits['atomic']}"
                 )
             missing_files.append(basename)
         else:
@@ -297,7 +297,7 @@ def checkInputFits(fitsd: list, logger=None):
             fitsd_out[-1]["fne"] = fne
             if logger:
                 logger.info(
-                    f"Entries for {fits["element"]}{fits["spectrum"]}_{fits["atomic"]} are {fns} and {fne}"
+                    f"Entries for {fits['element']}{fits['spectrum']}_{fits['atomic']} are {fns} and {fne}"
                 )
     return fitsd_out, missing_files
 
