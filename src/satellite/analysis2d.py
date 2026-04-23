@@ -13,7 +13,8 @@ import warnings
 from collections import Counter
 
 import matplotlib
-matplotlib.use('Agg')
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pyneb as pn
@@ -59,7 +60,7 @@ def _relabel_output_headers_to_pixels(*filenames: str) -> None:
         content = content.replace("Slit Nr.", "Pixel Nr.")
         content = content.replace("\nSlit ", "\nPixel ")
         if content.startswith("Slit "):
-            content = "Pixel " + content[len("Slit "):]
+            content = "Pixel " + content[len("Slit ") :]
         with open(fn, "w") as fout:
             fout.write(content)
 
@@ -173,6 +174,88 @@ def _run_pixel_pipeline(
             rows, ext_law=ext_law, R_V=pn_rv, r_theo=2.85, norm_wave_A=4861.0
         )
         I_corr = {r.label: r.I_obs * corr_factor[r.label] for r in rows}
+
+        disable_errors = _cfg_bool(
+            G_ANALYSIS_CFG.get("disable_errors", False), default=False
+        )
+
+        if disable_errors:
+            rc_test = pn.RedCorr(E_BV=1.0, R_V=pn_rv, law=ext_law)
+            fac = rc_test.cHbeta
+            chbeta = float(np.atleast_1d(rc_central.cHbeta)[0])
+
+            global_intensities = {
+                "intensities": [
+                    {
+                        "element_pn": r.label,
+                        "wavelength_A": r.wave_A,
+                        "intensity": I_corr[r.label],
+                        "intensity_err": 0.0,
+                    }
+                    for r in rows
+                ],
+                "E_BV": float(np.atleast_1d(rc_central.E_BV)[0]),
+                "E_BVError": 0.0,
+                "cHbeta": chbeta,
+                "cHbetaError": 0.0,
+                "fac": fac,
+                "FHb": ss.findEntry(
+                    ss.reference_element["element"],
+                    ss.reference_element["spectrum"],
+                    ss.reference_element["atomic"],
+                    cpd,
+                )["sslit_sum"]
+                * energy_parameter,
+                "FHb_error": 0.0,
+            }
+
+            global_ratios = {}
+            for ratio in ratios:
+                global_ratios[ratio] = so.computeRatio(
+                    ratio, cpd, global_intensities["intensities"], logger
+                )
+
+            global_tene, diagnostics_ok = st.computeTeNePairs(
+                density_diagnostics,
+                temperature_diagnostics,
+                global_intensities,
+                ss.WAVELENGTH_TOLERANCE_FOR_TENE,
+                logger,
+                mc_N=1,
+                seed=int(datetime.datetime.now().strftime("%Y%m%d%H%M%S")),
+            )
+            if not diagnostics_ok:
+                raise RuntimeError(
+                    "Failed computing diagnostics in disable_errors mode"
+                )
+
+            global_ionic_abundancies = sa.computeIonicAbundancies(
+                cpd,
+                global_tene,
+                global_intensities,
+                0.0,
+                logger,
+                tol_A=ss.WAVELENGTH_TOLERANCE_FOR_TENE,
+                mc_N=1,
+                seed=int(datetime.datetime.now().strftime("%Y%m%d%H%M%S")),
+            )
+
+            elemspec_abundancies = sb.computeAbundancies(
+                cpd, global_ionic_abundancies, logger
+            )
+            global_icfs = sf.computeIcfsWithErrors(elemspec_abundancies, logger)
+            global_element_abundancies = sf.ionicAbundance2elementAbundance(
+                elemspec_abundancies, logger
+            )
+
+            return (
+                global_intensities,
+                global_ratios,
+                global_tene,
+                global_ionic_abundancies,
+                global_icfs,
+                global_element_abundancies,
+            )
 
         nan_diagnostics = True
         times_nan_encountered = 0
@@ -293,6 +376,7 @@ G_PN_RV = None
 G_ENERGY_PARAMETER = None
 G_WORKER_LOG_LEVEL = None
 G_TEMP_DIR = None
+G_LOG_FILE = None
 
 
 def _split_rows_into_chunks(row_range: range, jobs: int) -> list:
@@ -328,6 +412,20 @@ def _build_chunk_tasks(row_range: range, col_range: range, jobs: int) -> list:
     return chunk_tasks
 
 
+def _extract_log_file_from_logger(logger):
+    """
+    Return the path of the first attached FileHandler, or None if the logger
+    does not log to a file.
+    """
+    if logger is None:
+        return None
+    for handler in getattr(logger, "handlers", []):
+        base_fn = getattr(handler, "baseFilename", None)
+        if base_fn:
+            return base_fn
+    return None
+
+
 def _init_worker(
     analysis_cfg: dict,
     fits_loaded: list,
@@ -343,6 +441,7 @@ def _init_worker(
     energy_parameter: float,
     log_level: int,
     temp_dir: str,
+    log_file: str,
 ):
     global G_ANALYSIS_CFG
     global G_FITS_LOADED
@@ -358,6 +457,7 @@ def _init_worker(
     global G_ENERGY_PARAMETER
     global G_WORKER_LOG_LEVEL
     global G_TEMP_DIR
+    global G_LOG_FILE
 
     G_ANALYSIS_CFG = analysis_cfg
     G_FITS_LOADED = fits_loaded
@@ -373,6 +473,7 @@ def _init_worker(
     G_ENERGY_PARAMETER = energy_parameter
     G_WORKER_LOG_LEVEL = log_level
     G_TEMP_DIR = temp_dir
+    G_LOG_FILE = log_file
 
 
 def _worker_process_chunk(args: tuple) -> str:
@@ -380,7 +481,7 @@ def _worker_process_chunk(args: tuple) -> str:
     logger = sl.setup_logger(
         f"2d_analysis_worker_{chunk_idx}",
         G_WORKER_LOG_LEVEL,
-        None,
+        G_LOG_FILE,
     )
 
     global_intensities = {}
@@ -400,7 +501,9 @@ def _worker_process_chunk(args: tuple) -> str:
         ref_error = float(G_FITS_LOADED[G_REF_IDX]["error_data"][row, col])
 
         if not np.isfinite(ref_signal) or not np.isfinite(ref_error):
-            failed_pixels.append((pixel_id, row, col, "non-finite reference signal/error"))
+            failed_pixels.append(
+                (pixel_id, row, col, "non-finite reference signal/error")
+            )
             continue
 
         if require_positive_reference and ref_signal <= 0.0:
@@ -581,7 +684,9 @@ def plot_results(chunk_dir: str, logger, cleanup=True) -> str:
     pixmap = _read_pixel_map(pixel_map_path)
     shape = tuple(manifest["image_shape"])
 
-    plot_dir = manifest.get("plot_dir") or os.path.join(os.getcwd(), DEFAULT_PLOT_DIRNAME)
+    plot_dir = manifest.get("plot_dir") or os.path.join(
+        os.getcwd(), DEFAULT_PLOT_DIRNAME
+    )
     plot_dir = os.path.abspath(plot_dir)
     _ensure_dir(plot_dir)
 
@@ -605,10 +710,30 @@ def plot_results(chunk_dir: str, logger, cleanup=True) -> str:
     for pixel_id, row, col, _ in merged["failed_pixels"]:
         failure_mask[row, col] = 1.0
 
-    _plot_array(selected_mask, "Selected pixels", os.path.join(mask_dir, "selected_pixels.png"), logger, force=True)
-    _plot_array(success_mask, "Successful pixels", os.path.join(mask_dir, "successful_pixels.png"), logger, force=True)
-    _plot_array(failure_mask, "Failed pixels", os.path.join(mask_dir, "failed_pixels.png"), logger, force=True)
-    _save_reason_summary(merged["failed_pixels"], os.path.join(mask_dir, "failure_reasons.txt"))
+    _plot_array(
+        selected_mask,
+        "Selected pixels",
+        os.path.join(mask_dir, "selected_pixels.png"),
+        logger,
+        force=True,
+    )
+    _plot_array(
+        success_mask,
+        "Successful pixels",
+        os.path.join(mask_dir, "successful_pixels.png"),
+        logger,
+        force=True,
+    )
+    _plot_array(
+        failure_mask,
+        "Failed pixels",
+        os.path.join(mask_dir, "failed_pixels.png"),
+        logger,
+        force=True,
+    )
+    _save_reason_summary(
+        merged["failed_pixels"], os.path.join(mask_dir, "failure_reasons.txt")
+    )
 
     # Intensities
     intensity_labels = sorted(
@@ -626,15 +751,16 @@ def plot_results(chunk_dir: str, logger, cleanup=True) -> str:
                 if entry["element_pn"] == label:
                     arr[row, col] = float(entry["intensity"])
                     break
-        _plot_array(arr, f"Line intensity: {label}", os.path.join(int_dir, f"{_sanitize_name(label)}.png"), logger)
+        _plot_array(
+            arr,
+            f"Line intensity: {label}",
+            os.path.join(int_dir, f"{_sanitize_name(label)}.png"),
+            logger,
+        )
 
     # Ratios
     ratio_labels = sorted(
-        {
-            label
-            for payload in merged["ratios"].values()
-            for label in payload.keys()
-        }
+        {label for payload in merged["ratios"].values() for label in payload.keys()}
     )
     for label in ratio_labels:
         arr = np.full(shape, np.nan)
@@ -642,9 +768,18 @@ def plot_results(chunk_dir: str, logger, cleanup=True) -> str:
             if label not in payload:
                 continue
             row, col = pixmap[pixel_id]
-            value = payload[label][0] if isinstance(payload[label], (tuple, list)) else payload[label]
+            value = (
+                payload[label][0]
+                if isinstance(payload[label], (tuple, list))
+                else payload[label]
+            )
             arr[row, col] = float(value)
-        _plot_array(arr, f"Line ratio: {label}", os.path.join(ratio_dir, f"{_sanitize_name(label)}.png"), logger)
+        _plot_array(
+            arr,
+            f"Line ratio: {label}",
+            os.path.join(ratio_dir, f"{_sanitize_name(label)}.png"),
+            logger,
+        )
 
     # Diagnostics
     diag_labels = sorted(
@@ -665,8 +800,18 @@ def plot_results(chunk_dir: str, logger, cleanup=True) -> str:
                     narr[row, col] = float(entry["sN"])
                     break
         base = _sanitize_name(f"{tlabel}__{nlabel}")
-        _plot_array(tarr, f"Temperature: {tlabel}/{nlabel}", os.path.join(diag_dir, f"temperature_{base}.png"), logger)
-        _plot_array(narr, f"Density: {tlabel}/{nlabel}", os.path.join(diag_dir, f"density_{base}.png"), logger)
+        _plot_array(
+            tarr,
+            f"Temperature: {tlabel}/{nlabel}",
+            os.path.join(diag_dir, f"temperature_{base}.png"),
+            logger,
+        )
+        _plot_array(
+            narr,
+            f"Density: {tlabel}/{nlabel}",
+            os.path.join(diag_dir, f"density_{base}.png"),
+            logger,
+        )
 
     # Ionic abundances
     ionic_labels = sorted(
@@ -684,7 +829,12 @@ def plot_results(chunk_dir: str, logger, cleanup=True) -> str:
                 if entry["pn_element"] == label:
                     arr[row, col] = float(entry["abundance"])
                     break
-        _plot_array(arr, f"Ionic abundance: {label}", os.path.join(ionic_dir, f"{_sanitize_name(label)}.png"), logger)
+        _plot_array(
+            arr,
+            f"Ionic abundance: {label}",
+            os.path.join(ionic_dir, f"{_sanitize_name(label)}.png"),
+            logger,
+        )
 
     # Total abundances
     total_labels = sorted(
@@ -701,7 +851,12 @@ def plot_results(chunk_dir: str, logger, cleanup=True) -> str:
                 continue
             row, col = pixmap[pixel_id]
             arr[row, col] = float(payload[label]["abundance"])
-        _plot_array(arr, f"Total abundance: {label}", os.path.join(total_dir, f"{_sanitize_name(label)}.png"), logger)
+        _plot_array(
+            arr,
+            f"Total abundance: {label}",
+            os.path.join(total_dir, f"{_sanitize_name(label)}.png"),
+            logger,
+        )
 
     if logger:
         logger.info(f"2-D plots written to {plot_dir}")
@@ -814,6 +969,8 @@ def analysis2d(
         chunk_dir = os.path.abspath(chunk_dir)
         os.makedirs(chunk_dir, exist_ok=True)
 
+    log_file = _extract_log_file_from_logger(logger)
+
     _init_worker(
         analysis_cfg,
         fits_loaded,
@@ -829,6 +986,7 @@ def analysis2d(
         energy_parameter,
         logger.level,
         chunk_dir,
+        log_file,
     )
 
     try:
@@ -841,7 +999,10 @@ def analysis2d(
                 with ctx.Pool(processes=len(chunk_tasks)) as pool:
                     chunk_files = pool.map(
                         _worker_process_chunk,
-                        [(idx, tasks, chunk_dir) for idx, tasks in enumerate(chunk_tasks)],
+                        [
+                            (idx, tasks, chunk_dir)
+                            for idx, tasks in enumerate(chunk_tasks)
+                        ],
                     )
             else:
                 logger.warning(
@@ -891,7 +1052,9 @@ def analysis2d(
             si.printIntensities(merged["intensities"], intensities_out, logger)
             so.printRatios(merged["ratios"], ratios_out, logger)
             st.printDiagnostics(merged["tene"], diagnostics_out, logger)
-            sa.printIonicAbundancies(merged["ionic_abundancies"], abundancies_out, logger)
+            sa.printIonicAbundancies(
+                merged["ionic_abundancies"], abundancies_out, logger
+            )
             sf.printIcfs(
                 merged["icfs"],
                 merged["element_abundancies"],

@@ -195,13 +195,23 @@ parser.add_argument(
     "--no-plots", action="store_true", dest="no_plots", help="Do no produce plotts."
 )
 
+parser.add_argument(
+    "--log-level",
+    metavar="LEVEL",
+    dest="log_level",
+    default="WARNING",
+    choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+    help="Global logging level for SATELLITE and PyNeb.",
+)
+
 if __name__ == "__main__":
 
     # parse cmd
     args = parser.parse_args()
 
     # setup a logger
-    logger = satlogger.setup_logger("specific_slit", logging.DEBUG, args.log_file)
+    level = getattr(logging, args.log_level.upper(), logging.WARNING)
+    logger = satlogger.setup_logger("specific_slit", level, args.log_file)
 
     # prepare for Chianti db if needed
     if args.chianti_path != "":
