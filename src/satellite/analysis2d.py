@@ -936,7 +936,9 @@ def analysis2d(
     jobs = max(1, int(analysis_cfg.get("jobs", 1)))
     keep_chunks = _cfg_bool(analysis_cfg.get("keep_chunks", False), default=False)
     chunk_dir = analysis_cfg.get("chunk_dir", None) or None
-    plot_dir = os.path.abspath(analysis_cfg.get("plot_dir", DEFAULT_PLOT_DIRNAME))
+    plot_dir = os.path.abspath(
+        analysis_cfg.get("plot_dir") or DEFAULT_PLOT_DIRNAME
+    )
 
     logger.info(
         f"Starting 2-D analysis over {total_pixels} pixels from shape {image_shape} with jobs={jobs}"
